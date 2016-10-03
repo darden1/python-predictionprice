@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn import tree
 import poloniex
-
+import logging
 
 class PredictionPrice(object):
     def __init__(self, currentPair="BTC_ETH", workingDirPath=".",
@@ -316,3 +316,94 @@ class PredictionPrice(object):
     def getAppreciationRate(self,price):
         return np.append(-np.diff(price) / price[1:].values,0)
 
+
+
+class CustumPoloniex(poloniex.Poloniex):
+    def __init__(self, APIKey=False, Secret=False,timeout=3, coach=True, loglevel=logging.WARNING, basicCoin="BTC"):
+        poloniex.Poloniex.__init__(self,APIKey=APIKey, Secret=Secret,timeout=timeout, coach=coach, loglevel=loglevel)
+        self.basicCoin=basicCoin
+    
+    def myAvailableCompleteBalances(self):
+        """return AvailableCompleteBalances as pandas.DataFrame."""
+        balance = pd.DataFrame.from_dict(self.myCompleteBalances()).T
+        return balance.iloc[np.where(balance["btcValue"] != "0.00000000")]
+    
+    def myEstimatedValueOfHoldings(self):
+        """return EstimatedValueOfHoldings."""
+        balance = self.myAvailableCompleteBalances()
+        estimatedValueOfHoldingsAsBTC = np.sum(np.float_(balance.iloc[:, 1]))
+        lastValueUSDT_BTC = pd.DataFrame.from_dict(self.marketTicker()).T.loc["USDT_BTC"]["last"]
+        estimatedValueOfHoldingsAsUSD = np.float_(lastValueUSDT_BTC) * estimatedValueOfHoldingsAsBTC
+        return estimatedValueOfHoldingsAsBTC, estimatedValueOfHoldingsAsUSD
+    
+    def cancelOnOrder(self,coin):
+        """cancel on Order"""
+        balance = self.myAvailableCompleteBalances()
+        if len(np.where(balance.index==coin)[0])==0: return
+        
+        while balance.loc[coin]["onOrders"]!="0.00000000":
+            orderId=pd.DataFrame.from_dict(self.myOrders(self.basicCoin + "_" + coin))["orderNumber"].tolist()[0]
+            self.cancelOrder(orderId)
+            balance = self.myAvailableCompleteBalances()
+            
+    def marketSellAll(self, coin):
+        """Sell all coin with market price."""
+        self.cancelOnOrder(coin)
+        balance = self.myAvailableCompleteBalances()
+        if len(np.where(balance.index==coin)[0])==0: return
+        bids=pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin)).bids
+        sumAmount=0.0
+        for rate,amount in zip(np.array(bids.tolist())[:,0],np.array(bids.tolist())[:,1]):
+            sumAmount += float(rate)*float(amount)
+            if float(balance.loc[coin]["btcValue"]) < sumAmount:
+                break
+        return self.sell(self.basicCoin + "_" + coin,rate,balance.loc[coin]["available"])
+
+    def marketSell(self, coin, btcValue):
+        """Sell coin with market price as estimated btcValue."""
+        self.cancelOnOrder(coin)
+        balance = self.myAvailableCompleteBalances()
+        if len(np.where(balance.index==coin)[0])==0: return
+        if float(btcValue)>float(balance.loc[coin]["btcValue"]):
+            return self.marketSellAll(coin)
+        bids=pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin)).bids
+        sumAmount=0.0
+        for rate,amount in zip(np.array(bids.tolist())[:,0],np.array(bids.tolist())[:,1]):
+            sumAmount += float(rate)*float(amount)
+            if float(btcValue) < sumAmount:
+                break
+        coinAmount=np.ceil(float(btcValue)/float(rate)*1e8)*1e-8
+        return self.sell(self.basicCoin + "_" + coin,rate,coinAmount)
+    
+    
+    def marketBuyAll(self, coin):
+        """Buy coin with market price as much as possible."""
+        self.cancelOnOrder(coin)
+        balance = self.myAvailableCompleteBalances()
+        if len(np.where(balance.index=="BTC")[0])==0: return
+        asks=pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin)).asks
+        sumAmount=0.0
+        for rate,amount in zip(np.array(asks.tolist())[:,0],np.array(asks.tolist())[:,1]):
+            sumAmount += float(rate)*float(amount)
+            if float(balance.loc["BTC"]["btcValue"]) < sumAmount:
+                break
+        coinAmount=np.floor(float(balance.loc["BTC"]["btcValue"])/float(rate)*1e8)*1e-8
+        if float(rate)*coinAmount<0.0001:
+            return
+        return self.buy(self.basicCoin + "_" + coin,rate,coinAmount)
+    
+    def marketBuy(self, coin, btcValue):
+        """Buy coin with market price as estimated btcValue."""
+        self.cancelOnOrder(coin)
+        balance = self.myAvailableCompleteBalances()
+        if len(np.where(balance.index=="BTC")[0])==0: return
+        if float(btcValue)>float(balance.loc["BTC"]["btcValue"]):
+            return self.marketBuyAll(coin)
+        asks=pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin)).asks
+        sumAmount=0.0
+        for rate,amount in zip(np.array(asks.tolist())[:,0],np.array(asks.tolist())[:,1]):
+            sumAmount += float(rate)*float(amount)
+            if float(btcValue) < sumAmount:
+                break
+        coinAmount=np.floor(float(btcValue)/float(rate)*1e8)*1e-8
+        return self.buy(self.basicCoin + "_" + coin,rate,coinAmount)
