@@ -7,9 +7,10 @@ setup(
         license          = "MIT",
         author           = "darden1",
         author_email     = "darden066@gmail.com",
-        url              = "https://github.com/",
+        url              = "https://github.com/darden1",
         keywords         = "",
         packages         = find_packages(),
-        install_requires = ["numpy","pandas","matplotlib","sklearn"],
+        install_requires = ["numpy","pandas","matplotlib","scikit-learn","poloniex"],
+        dependency_links = ["https://codeload.github.com/s4w3d0ff/python-poloniex/zip/master#egg=poloniex"],
         zip_safe=False
         )
