@@ -7,12 +7,14 @@ from predictionprice import PredictionPrice
 
 
 def main():
-    basicCoin="BTC"
     myGmailAddress = "********@gmail.com"
     myGmailAddressPassword = "************"
     myAPIKey="************************"
     mySecret="************************************************"
-
+    
+    basicCoin="BTC"
+    workingDirPath="."
+    
     coins=["ETH","XMR","XRP","FCT","DASH"]
     backTestOptParams=[
         [20, 40, 20, 40],
