@@ -274,7 +274,8 @@ class PredictionPrice(object):
         return sum(y) * 1.0 / len(y)
 
     def standarizationFeature(self,X):
-        for i in range(self.numFeature):
+        numTrainSample, numFeature = np.shape(X)
+        for i in range(numFeature):
             X[:, i] = (X[:, i] - X[:, i].mean()) / X[:, i].std()
         return X
 
