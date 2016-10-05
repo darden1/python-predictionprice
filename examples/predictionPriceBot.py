@@ -24,13 +24,13 @@ def botRoutine():
     tommorrwPricePrediction = []
     # ---Prediction price and back test
     for coinIndex in range(len(coins)):
-        pp = PredictionPrice(currentPair=basicCoin + "_" + coins[coinIndex], workingDirPath=workingDirPath,
+        pp = PredictionPrice(currentPair = basicCoin + "_" + coins[coinIndex], workingDirPath = workingDirPath,
                              waitGettingTodaysChart=False,
-                             gmailAddress=myGmailAddress, gmailAddressPassword=myGmailAddressPassword,
-                             backTestOptNumFeatureMin=backTestOptParams[coinIndex][0],
-                             backTestOptNumFeatureMax=backTestOptParams[coinIndex][1],
-                             backTestOptNumTrainSampleMin=backTestOptParams[coinIndex][2],
-                             backTestOptNumTrainSampleMax=backTestOptParams[coinIndex][3])
+                             gmailAddress = myGmailAddress, gmailAddressPassword = myGmailAddressPassword,
+                             backTestOptNumFeatureMin = backTestOptParams[coinIndex][0],
+                             backTestOptNumFeatureMax = backTestOptParams[coinIndex][1],
+                             backTestOptNumTrainSampleMin = backTestOptParams[coinIndex][2],
+                             backTestOptNumTrainSampleMax = backTestOptParams[coinIndex][3])
 
         pp.fit(pp.appreciationRate_, pp.quantizer(pp.appreciationRate_))
         pp.sendMail(pp.getComment())
@@ -38,12 +38,11 @@ def botRoutine():
         tommorrwPricePrediction.append(pp.tommorrowPriceFlag_)
 
     # --- Fit balance
-    if len(tommorrwPricePrediction) == len(coins):  # No error
-        polo = CustumPoloniex(APIKey=myAPIKey, Secret=mySecret, workingDirPath=workingDirPath,
-                              gmailAddress=myGmailAddress, gmailAddressPassword=myGmailAddressPassword)
-        polo.fitBalance(coins, tommorrwPricePrediction)
-        polo.sendMailBalance()
-        polo.savePoloniexBalanceToCsv()
+    polo = CustumPoloniex(APIKey = myAPIKey, Secret = mySecret, workingDirPath = workingDirPath,
+                          gmailAddress = myGmailAddress, gmailAddressPassword = myGmailAddressPassword)
+    polo.fitBalance(coins, tommorrwPricePrediction)
+    polo.sendMailBalance()
+    polo.savePoloniexBalanceToCsv()
 
     # --- back test optimization
     for coinIndex in range(len(coins)):
@@ -54,7 +53,6 @@ def botRoutine():
 if __name__ == "__main__":
     scheduler = GeventScheduler()
     scheduler.add_job(botRoutine, "cron", hour=9, minute=5)
-
     g = scheduler.start()  # g is the greenlet that runs the scheduler loop
     g.join()
 
