@@ -12,6 +12,7 @@ import datetime
 import smtplib
 import email
 import pickle
+import csv
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -320,10 +321,14 @@ class PredictionPrice(object):
 
 
 class CustumPoloniex(poloniex.Poloniex):
-    def __init__(self, APIKey=False, Secret=False,timeout=3, coach=True, loglevel=logging.WARNING, basicCoin="BTC"):
+    def __init__(self, APIKey=False, Secret=False,timeout=10, coach=True, loglevel=logging.WARNING, basicCoin="BTC",
+                 workingDirPath=".", gmailAddress="", gmailAddressPassword=""):
         poloniex.Poloniex.__init__(self,APIKey=APIKey, Secret=Secret,timeout=timeout, coach=coach, loglevel=loglevel)
-        self.basicCoin=basicCoin
-    
+        self.basicCoin = basicCoin
+        self.workingDirPath = workingDirPath
+        self.gmailAddress = gmailAddress
+        self.gmailAddressPassword = gmailAddressPassword
+        
     def myAvailableCompleteBalances(self):
         """return AvailableCompleteBalances as pandas.DataFrame."""
         balance = pd.DataFrame.from_dict(self.myCompleteBalances()).T
@@ -408,3 +413,76 @@ class CustumPoloniex(poloniex.Poloniex):
                 break
         coinAmount=np.floor(float(btcValue)/float(rate)*1e8)*1e-8
         return self.buy(self.basicCoin + "_" + coin,rate,coinAmount)
+
+    def fitSell(self, coins, buySigns):
+        """Sell coins in accordance with buySigns."""
+        balance=self.myAvailableCompleteBalances()  
+        for coinIndex in range(len(coins)):
+            if not buySigns[coinIndex]: #Sign is Sell?
+                if not (len(np.where(balance.index==coins[coinIndex])[0])==0): #Holding the coin?
+                    self.marketSellAll(coins[coinIndex])
+                    
+    def fitBuy(self, coins, buySigns):
+        """Buy coins in accordance with buySigns."""
+        balance=self.myAvailableCompleteBalances()
+        if np.sum(buySigns)==0: # All signs are sell?
+            return
+        else:
+            myBTC,myUSD = self.myEstimatedValueOfHoldings()
+            distributionBTCValue = myBTC*1.0/np.sum(buySigns)
+
+            for coinIndex in range(len(coins)):
+                if buySigns[coinIndex]: #Sign is Buy?
+                    if not (len(np.where(balance.index==coins[coinIndex])[0])==0): #Holding this coin?
+                        extraBTCValue=float(balance.loc[coins[coinIndex]]["btcValue"])-float(distributionBTCValue)
+                        if extraBTCValue>0:
+                            self.marketSell(coins[coinIndex],extraBTCValue)
+                        else:
+                            self.marketBuy(coins[coinIndex],np.abs(extraBTCValue))
+                    else:
+                        self.marketBuy(coins[coinIndex],distributionBTCValue)
+                        
+    def fitBalance(self, coins, buySigns):
+        """Call fitSell and fitBuy."""
+        self.fitSell(coins, buySigns)
+        self.fitBuy(coins, buySigns)
+        
+    def sendMailBalance(self):
+        """Send the balance by e-mail."""
+        if self.gmailAddress=="" or self.gmailAddressPassword=="":
+            return "Set your gmail address and password."
+        # ---Create message
+        myBTC,myUSD = self.myEstimatedValueOfHoldings()
+        balance = self.myAvailableCompleteBalances()
+        body = ""
+        body += "Your Fund is " + str(myBTC) + " BTC\n"
+        body += "Your Fund is " + str(myUSD) + " USD\n"
+        body += str(balance)
+        msg = email.MIMEMultipart.MIMEMultipart()
+        msg["From"] = self.gmailAddress
+        msg["To"] = self.gmailAddress
+        msg["Date"] = email.Utils.formatdate()
+        msg["Subject"] = "Poloniex Balance"
+        msg.attach(email.MIMEText.MIMEText(body))
+        # ---SendMail
+        smtpobj = smtplib.SMTP("smtp.gmail.com", 587)
+        smtpobj.ehlo()
+        smtpobj.starttls()
+        smtpobj.login(self.gmailAddress, self.gmailAddressPassword)
+        smtpobj.sendmail(self.gmailAddress, self.gmailAddress, msg.as_string())
+        smtpobj.close()
+
+    def savePoloniexBalanceToCsv(self):
+        """Save EstimatedValueOfHoldings to csv file."""
+        fileName = self.workingDirPath + '\PoloniexBalance.csv'
+        date = str(datetime.datetime.today())[0:19]
+        myBTC,myUSD = self.myEstimatedValueOfHoldings()
+        if os.path.exists(fileName):
+            f = open(fileName, 'a')
+            writer = csv.writer(f, lineterminator='\n')
+        else:
+            f = open(fileName, 'w')
+            writer = csv.writer(f, lineterminator='\n')
+            writer.writerow(["Date","BTC","USD"]) #---Write header
+        writer.writerow([date,str(myBTC),str(myUSD)])
+        f.close()
