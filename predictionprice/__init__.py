@@ -474,7 +474,7 @@ class CustumPoloniex(poloniex.Poloniex):
 
     def savePoloniexBalanceToCsv(self):
         """Save EstimatedValueOfHoldings to csv file."""
-        fileName = self.workingDirPath + '\PoloniexBalance.csv'
+        fileName = self.workingDirPath + '/PoloniexBalance.csv'
         date = str(datetime.datetime.today())[0:19]
         myBTC,myUSD = self.myEstimatedValueOfHoldings()
         if os.path.exists(fileName):
