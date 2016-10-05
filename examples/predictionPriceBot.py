@@ -44,7 +44,7 @@ def botRoutine():
     polo.sendMailBalance()
     polo.savePoloniexBalanceToCsv()
 
-    # --- back test optimization
+    # --- Back test optimization
     for coinIndex in range(len(coins)):
         pp = ppList[coinIndex]
         pp.backTestOptimization(pp.appreciationRate_, pp.quantizer(pp.appreciationRate_))
