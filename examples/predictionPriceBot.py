@@ -28,7 +28,6 @@ def botRoutine():
     # --- Prediction price and back test
     for coinIndex in range(len( )):
         pp = PredictionPrice(currentPair = basicCoin + "_" + coins[coinIndex], workingDirPath = workingDirPath,
-                             waitGettingTodaysChart=False,
                              gmailAddress = myGmailAddress, gmailAddressPassword = myGmailAddressPassword,
                              backTestOptNumFeatureMin = backTestOptParams[coinIndex][0],
                              backTestOptNumFeatureMax = backTestOptParams[coinIndex][1],
