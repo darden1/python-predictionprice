@@ -26,7 +26,7 @@ def botRoutine():
     tomorrwPricePrediction = []
 
     # --- Prediction price and back test
-    for coinIndex in range(len( )):
+    for coinIndex in range(len(coins)):
         pp = PredictionPrice(currentPair = basicCoin + "_" + coins[coinIndex], workingDirPath = workingDirPath,
                              gmailAddress = myGmailAddress, gmailAddressPassword = myGmailAddressPassword,
                              backTestOptNumFeatureMin = backTestOptParams[coinIndex][0],
@@ -40,7 +40,6 @@ def botRoutine():
         tomorrwPricePrediction.append(pp.tomorrowPriceFlag_)
 
     # --- Fit balance
-    print(tomorrwPricePrediction)
     polo = CustumPoloniex(APIKey = myAPIKey, Secret = mySecret, workingDirPath = workingDirPath,
                           gmailAddress = myGmailAddress, gmailAddressPassword = myGmailAddressPassword,
                           coins = coins, buySigns = tomorrwPricePrediction)
