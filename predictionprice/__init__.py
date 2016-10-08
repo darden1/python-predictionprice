@@ -86,7 +86,7 @@ class PredictionPrice(object):
         msg["From"] = self.gmailAddress
         msg["To"] = self.gmailAddress
         msg["Date"] = email.Utils.formatdate()
-        msg["Subject"] = "TommorrowPricePrediction( " + self.currentPair + " )"
+        msg["Subject"] = "TomorrowPricePrediction( " + self.currentPair + " )"
         msg.attach(email.MIMEText.MIMEText(body))
         # ---AttachimentFile
         attachimentFiles=[]
@@ -108,7 +108,7 @@ class PredictionPrice(object):
 
     def fit(self, sampleData, classData):
         self.backTest(sampleData, classData, self.numFeature, self.numTrainSample, True)
-        self.setTommorrowPriceProbability(sampleData, classData)
+        self.setTomorrowPriceProbability(sampleData, classData)
 
     def getComment(self):
         commentStr=""
@@ -139,10 +139,10 @@ class PredictionPrice(object):
         commentStr += "FinalCurrentPrice: " + str(self.backTestResult_["FinalCurrentPrice"].values[0]) + "\n"
         commentStr += "IncreasedCurrentPriceRatio[%]: " + str(round(self.backTestResult_["IncreasedCurrentPriceRatio"].values[0]*100, 1)) + "\n"
         commentStr += "-----------------------------------------\n"
-        commentStr += "Tommorrow " + self.currentPair + " price prediction\n"
+        commentStr += "Tomorrow " + self.currentPair + " price prediction\n"
         commentStr += "-----------------------------------------\n"
-        commentStr += "TommorrowPriceRise?: " + str(self.tommorrowPriceFlag_) +"\n"
-        commentStr += "Probability[%]: " + str(round(self.tommorrowPriceProbability_*100,1)) +"\n"
+        commentStr += "TomorrowPriceRise?: " + str(self.tomorrowPriceFlag_) +"\n"
+        commentStr += "Probability[%]: " + str(round(self.tomorrowPriceProbability_*100,1)) +"\n"
         return commentStr
 
 
@@ -256,13 +256,13 @@ class PredictionPrice(object):
 
         return backTestResult
 
-    def setTommorrowPriceProbability(self, sampleData, classData):
-        self.tommorrowPriceProbability_ = (self.prediction(sampleData, classData, 0, self.numFeature, self.numTrainSample) + 1.0) / 2.0
-        if self.tommorrowPriceProbability_>0.5:
-            self.tommorrowPriceFlag_=True
+    def setTomorrowPriceProbability(self, sampleData, classData):
+        self.tomorrowPriceProbability_ = (self.prediction(sampleData, classData, 0, self.numFeature, self.numTrainSample) + 1.0) / 2.0
+        if self.tomorrowPriceProbability_>0.5:
+            self.tomorrowPriceFlag_ = True
         else:
-            self.tommorrowPriceFlag_=False
-        return self.tommorrowPriceProbability_
+            self.tomorrowPriceFlag_ = False
+        return self.tomorrowPriceProbability_
 
     def prediction(self,sampleData,classData,trainStartIndex, numFeature, numTrainSample):
         train_X, train_y = self.preparationTrainSample(sampleData,classData,trainStartIndex, numFeature, numTrainSample)
@@ -322,12 +322,16 @@ class PredictionPrice(object):
 
 class CustumPoloniex(poloniex.Poloniex):
     def __init__(self, APIKey=False, Secret=False,timeout=10, coach=True, loglevel=logging.WARNING, basicCoin="BTC",
-                 workingDirPath=".", gmailAddress="", gmailAddressPassword=""):
+                 workingDirPath=".", gmailAddress="", gmailAddressPassword="",
+                 coins=[], buySigns=[] ):
         poloniex.Poloniex.__init__(self,APIKey=APIKey, Secret=Secret,timeout=timeout, coach=coach, loglevel=loglevel)
         self.basicCoin = basicCoin
         self.workingDirPath = workingDirPath
         self.gmailAddress = gmailAddress
         self.gmailAddressPassword = gmailAddressPassword
+        self.coins = coins
+        self.buySigns = buySigns
+
         
     def myAvailableCompleteBalances(self):
         """return AvailableCompleteBalances as pandas.DataFrame."""
@@ -414,38 +418,38 @@ class CustumPoloniex(poloniex.Poloniex):
         coinAmount=np.floor(float(btcValue)/float(rate)*1e8)*1e-8
         return self.buy(self.basicCoin + "_" + coin,rate,coinAmount)
 
-    def fitSell(self, coins, buySigns):
+    def fitSell(self):
         """Sell coins in accordance with buySigns."""
         balance=self.myAvailableCompleteBalances()  
-        for coinIndex in range(len(coins)):
-            if not buySigns[coinIndex]: #Sign is Sell?
-                if not (len(np.where(balance.index==coins[coinIndex])[0])==0): #Holding the coin?
-                    self.marketSellAll(coins[coinIndex])
+        for coinIndex in range(len(self.coins)):
+            if not self.buySigns[coinIndex]: #Sign is Sell?
+                if not (len(np.where(balance.index==self.coins[coinIndex])[0])==0): #Holding the coin?
+                    self.marketSellAll(self.coins[coinIndex])
                     
-    def fitBuy(self, coins, buySigns):
+    def fitBuy(self):
         """Buy coins in accordance with buySigns."""
         balance=self.myAvailableCompleteBalances()
-        if np.sum(buySigns)==0: # All signs are sell?
+        if np.sum(self.buySigns)==0: # All signs are sell?
             return
         else:
             myBTC,myUSD = self.myEstimatedValueOfHoldings()
-            distributionBTCValue = myBTC*1.0/np.sum(buySigns)
+            distributionBTCValue = myBTC*1.0/np.sum(self.buySigns)
 
-            for coinIndex in range(len(coins)):
-                if buySigns[coinIndex]: #Sign is Buy?
-                    if not (len(np.where(balance.index==coins[coinIndex])[0])==0): #Holding this coin?
-                        extraBTCValue=float(balance.loc[coins[coinIndex]]["btcValue"])-float(distributionBTCValue)
+            for coinIndex in range(len(self.coins)):
+                if self.buySigns[coinIndex]: #Sign is Buy?
+                    if not (len(np.where(balance.index==self.coins[coinIndex])[0])==0): #Holding this coin?
+                        extraBTCValue=float(balance.loc[self.coins[coinIndex]]["btcValue"])-float(distributionBTCValue)
                         if extraBTCValue>0:
-                            self.marketSell(coins[coinIndex],extraBTCValue)
+                            self.marketSell(self.coins[coinIndex],extraBTCValue)
                         else:
-                            self.marketBuy(coins[coinIndex],np.abs(extraBTCValue))
+                            self.marketBuy(self.coins[coinIndex],np.abs(extraBTCValue))
                     else:
-                        self.marketBuy(coins[coinIndex],distributionBTCValue)
+                        self.marketBuy(self.coins[coinIndex],distributionBTCValue)
                         
-    def fitBalance(self, coins, buySigns):
+    def fitBalance(self):
         """Call fitSell and fitBuy."""
-        self.fitSell(coins, buySigns)
-        self.fitBuy(coins, buySigns)
+        self.fitSell()
+        self.fitBuy()
         
     def sendMailBalance(self):
         """Send the balance by e-mail."""
@@ -455,6 +459,9 @@ class CustumPoloniex(poloniex.Poloniex):
         myBTC,myUSD = self.myEstimatedValueOfHoldings()
         balance = self.myAvailableCompleteBalances()
         body = ""
+        body += "Coins: " + str(self.coins) + "\n"
+        body += "BuySigns: " + np.str(self.buySigns) + "\n"
+        body += "\n"
         body += "Your Fund is " + str(myBTC) + " BTC\n"
         body += "Your Fund is " + str(myUSD) + " USD\n"
         body += str(balance)
@@ -474,15 +481,15 @@ class CustumPoloniex(poloniex.Poloniex):
 
     def savePoloniexBalanceToCsv(self):
         """Save EstimatedValueOfHoldings to csv file."""
-        fileName = self.workingDirPath + '/PoloniexBalance.csv'
+        fileName = self.workingDirPath + "/PoloniexBalance.csv"
         date = str(datetime.datetime.today())[0:19]
-        myBTC,myUSD = self.myEstimatedValueOfHoldings()
+        myBTC, myUSD = self.myEstimatedValueOfHoldings()
         if os.path.exists(fileName):
-            f = open(fileName, 'a')
-            writer = csv.writer(f, lineterminator='\n')
+            f = open(fileName, "a")
+            writer = csv.writer(f, lineterminator="\n")
         else:
-            f = open(fileName, 'w')
-            writer = csv.writer(f, lineterminator='\n')
-            writer.writerow(["Date","BTC","USD"]) #---Write header
+            f = open(fileName, "w")
+            writer = csv.writer(f, lineterminator="\n")
+            writer.writerow(["Date","BTC","USD"])  # Write header
         writer.writerow([date,str(myBTC),str(myUSD)])
         f.close()
