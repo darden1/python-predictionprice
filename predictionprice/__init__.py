@@ -187,6 +187,7 @@ class PredictionPrice(object):
         ax.set_zlabel("IncreasedFundRatio")
         ax.view_init(90, 90)
         plt.savefig(self.workingDirPath + "/backTestOptResult_" + self.currentPair + ".png", dpi=50)
+        plt.close()
 
     def backTest(self, sampleData, classData, numFeature, numTrainSample, saveBackTestGraph):
         Y = []
@@ -251,6 +252,7 @@ class PredictionPrice(object):
             ax2.set_ylabel("Price[" + self.currentPair + "]")
             ax1.legend([p1, p2], ["Fund", "Price_" + self.currentPair], loc="upper left")
             plt.savefig(self.workingDirPath + "/backTest_" + self.currentPair + ".png", dpi=50)
+            plt.close()
 
             self.backTestResult_ = backTestResult
 
