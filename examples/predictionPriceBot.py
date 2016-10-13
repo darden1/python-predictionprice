@@ -54,6 +54,6 @@ def botRoutine():
 
 
 if __name__ == "__main__":
-    sc = BlockingScheduler(timezone='UTC')
-    sc.add_job(botRoutine, 'cron', hour=0, minute=5)
+    sc = BlockingScheduler(timezone="UTC")
+    sc.add_job(botRoutine, "cron", hour=0, minute=1)
     sc.start()
