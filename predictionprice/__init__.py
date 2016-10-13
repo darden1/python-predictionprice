@@ -333,12 +333,12 @@ class CustumPoloniex(poloniex.Poloniex):
         self.coins = coins
         self.buySigns = buySigns
 
-        
+
     def myAvailableCompleteBalances(self):
         """return AvailableCompleteBalances as pandas.DataFrame."""
         balance = pd.DataFrame.from_dict(self.myCompleteBalances()).T
         return balance.iloc[np.where(balance["btcValue"] != "0.00000000")]
-    
+
     def myEstimatedValueOfHoldings(self):
         """return EstimatedValueOfHoldings."""
         balance = self.myAvailableCompleteBalances()
@@ -346,17 +346,17 @@ class CustumPoloniex(poloniex.Poloniex):
         lastValueUSDT_BTC = pd.DataFrame.from_dict(self.marketTicker()).T.loc["USDT_BTC"]["last"]
         estimatedValueOfHoldingsAsUSD = np.float_(lastValueUSDT_BTC) * estimatedValueOfHoldingsAsBTC
         return estimatedValueOfHoldingsAsBTC, estimatedValueOfHoldingsAsUSD
-    
+
     def cancelOnOrder(self,coin):
         """cancel on Order"""
         balance = self.myAvailableCompleteBalances()
         if len(np.where(balance.index==coin)[0])==0: return
-        
+
         while balance.loc[coin]["onOrders"]!="0.00000000":
             orderId=pd.DataFrame.from_dict(self.myOrders(self.basicCoin + "_" + coin))["orderNumber"].tolist()[0]
             self.cancelOrder(orderId)
             balance = self.myAvailableCompleteBalances()
-            
+
     def marketSellAll(self, coin):
         """Sell all coin with market price."""
         self.cancelOnOrder(coin)
@@ -381,16 +381,14 @@ class CustumPoloniex(poloniex.Poloniex):
         sumBtcValue = 0.0
         sumAmount = 0.0
         for rate, amount in zip(np.array(bids.tolist())[:,0],np.array(bids.tolist())[:,1]):
-            oldSumAmount = sumAmount
             sumAmount += float(amount)
-            oldSumBtcValue = sumBtcValue
             sumBtcValue += float(rate)*float(amount)
             if float(btcValue) < sumBtcValue:
                 break
-        coinAmount = np.floor((oldSumAmount + (float(btcValue) - float(oldSumBtcValue))/float(rate)) * 1e8) * 1e-8
+        coinAmount = np.floor((sumAmount - (float(sumBtcValue) - float(btcValue))/float(rate)) * 1e7) * 1e-7
         return self.sell(self.basicCoin + "_" + coin, rate, coinAmount)
-    
-    
+
+
     def marketBuyAll(self, coin):
         """Buy coin with market price as much as possible."""
         self.cancelOnOrder(coin)
@@ -400,17 +398,15 @@ class CustumPoloniex(poloniex.Poloniex):
         sumBtcValue = 0.0
         sumAmount = 0.0
         for rate, amount in zip(np.array(asks.tolist())[:,0],np.array(asks.tolist())[:,1]):
-            oldSumAmount = sumAmount
             sumAmount += float(amount)
-            oldSumBtcValue = sumBtcValue
             sumBtcValue += float(rate)*float(amount)
             if float(balance.loc["BTC"]["btcValue"]) < sumBtcValue:
                 break
-        coinAmount = np.floor((oldSumAmount + (float(balance.loc["BTC"]["btcValue"]) - float(oldSumBtcValue)) / float(rate)) * 1e8) * 1e-8
+        coinAmount = np.floor((sumAmount - (float(sumBtcValue) - float(balance.loc["BTC"]["btcValue"])) / float(rate)) * 1e7) * 1e-7
         if float(rate)*coinAmount<0.0001:
             return
         return self.buy(self.basicCoin + "_" + coin, rate, coinAmount)
-    
+
     def marketBuy(self, coin, btcValue):
         """Buy coin with market price as estimated btcValue."""
         self.cancelOnOrder(coin)
@@ -422,23 +418,21 @@ class CustumPoloniex(poloniex.Poloniex):
         sumBtcValue = 0.0
         sumAmount = 0.0
         for rate, amount in zip(np.array(asks.tolist())[:,0],np.array(asks.tolist())[:,1]):
-            oldSumAmount = sumAmount
             sumAmount += float(amount)
-            oldSumBtcValue = sumBtcValue
             sumBtcValue += float(rate)*float(amount)
             if float(btcValue) < sumBtcValue:
                 break
-        coinAmount = np.floor((oldSumAmount + (float(btcValue) - float(oldSumBtcValue)) / float(rate)) * 1e8) * 1e-8
+        coinAmount = np.floor((sumAmount - (float(sumBtcValue) - float(btcValue)) / float(rate)) * 1e7) * 1e-7
         return self.buy(self.basicCoin + "_" + coin, rate, coinAmount)
 
     def fitSell(self):
         """Sell coins in accordance with buySigns."""
-        balance=self.myAvailableCompleteBalances()  
+        balance=self.myAvailableCompleteBalances()
         for coinIndex in range(len(self.coins)):
             if not self.buySigns[coinIndex]: #Sign is Sell?
-                if not (len(np.where(balance.index==self.coins[coinIndex])[0])==0): #Holding the coin?
+                if len(np.where(balance.index == self.coins[coinIndex])[0]) != 0:  # Holding the coin?
                     self.marketSellAll(self.coins[coinIndex])
-                    
+
     def fitBuy(self):
         """Buy coins in accordance with buySigns."""
         balance=self.myAvailableCompleteBalances()
@@ -447,23 +441,34 @@ class CustumPoloniex(poloniex.Poloniex):
         else:
             myBTC,myUSD = self.myEstimatedValueOfHoldings()
             distributionBTCValue = myBTC*1.0/np.sum(self.buySigns)
-
+            # --- Sell extra coins
+            numSelledExtraCoins = 0
             for coinIndex in range(len(self.coins)):
                 if self.buySigns[coinIndex]: #Sign is Buy?
-                    if not (len(np.where(balance.index==self.coins[coinIndex])[0])==0): #Holding this coin?
-                        extraBTCValue=float(balance.loc[self.coins[coinIndex]]["btcValue"])-float(distributionBTCValue)
+                    if len(np.where(balance.index == self.coins[coinIndex])[0]) != 0:  # Holding the coin?
+                        extraBTCValue = float(balance.loc[self.coins[coinIndex]]["btcValue"]) - float(distributionBTCValue)
                         if extraBTCValue>0:
                             self.marketSell(self.coins[coinIndex],extraBTCValue)
-                        else:
-                            self.marketBuy(self.coins[coinIndex],np.abs(extraBTCValue))
+                            numSelledExtraCoins += 1
+
+            # --- Buy coins by distlibuted btcValue
+            balance = self.myAvailableCompleteBalances()
+            myBTC,myUSD = self.myEstimatedValueOfHoldings()
+            distributionBTCValue = myBTC*1.0/np.sum(self.buySigns)
+            for coinIndex in range(len(self.coins)):
+                if self.buySigns[coinIndex]:  # Sign is Buy?
+                    if len(np.where(balance.index == self.coins[coinIndex])[0]) != 0:  # Holding the coin?
+                        extraBTCValue = float(balance.loc[self.coins[coinIndex]]["btcValue"]) - float(distributionBTCValue)
+                        if extraBTCValue < 0:
+                            self.marketBuy(self.coins[coinIndex], np.abs(extraBTCValue))
                     else:
-                        self.marketBuy(self.coins[coinIndex],distributionBTCValue)
-                        
+                        self.marketBuy(self.coins[coinIndex], distributionBTCValue)
+
     def fitBalance(self):
         """Call fitSell and fitBuy."""
         self.fitSell()
         self.fitBuy()
-        
+
     def sendMailBalance(self):
         """Send the balance by e-mail."""
         if self.gmailAddress=="" or self.gmailAddressPassword=="":
