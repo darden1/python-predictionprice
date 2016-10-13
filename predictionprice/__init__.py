@@ -7,6 +7,7 @@ http://opensource.org/licenses/mit-license.php
 # -*- coding: utf-8 -*-
 import sys
 import os
+import pytz
 import time
 import datetime
 import smtplib
@@ -61,7 +62,7 @@ class PredictionPrice(object):
         self.backTestOptNumTrainSampleMin = backTestOptNumTrainSampleMin
         self.backTestOptNumTrainSampleMax = backTestOptNumTrainSampleMax
 
-        self.todayStr = str(datetime.datetime.today())[0:10]
+        self.todayStr = str(datetime.datetime.now(pytz.timezone("UTC")))[0:10]
         self.chartData_ = self.getChartData()
         #---self.saveChartData(self.chartData_)
         #---self.chartData_ = self.loadChartData()
