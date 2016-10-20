@@ -394,16 +394,16 @@ class CustumPoloniex(poloniex.Poloniex):
         """Buy coin with market price as much as possible."""
         self.cancelOnOrder(coin)
         balance = self.myAvailableCompleteBalances()
-        if len(np.where(balance.index=="BTC")[0])==0: return
+        if len(np.where(balance.index==self.basicCoin)[0])==0: return
         asks = pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin)).asks
         sumBtcValue = 0.0
         sumAmount = 0.0
         for rate, amount in zip(np.array(asks.tolist())[:,0],np.array(asks.tolist())[:,1]):
             sumAmount += float(amount)
             sumBtcValue += float(rate)*float(amount)
-            if float(balance.loc["BTC"]["btcValue"]) < sumBtcValue:
+            if float(balance.loc[self.basicCoin]["btcValue"]) < sumBtcValue:
                 break
-        coinAmount = np.floor((sumAmount - (float(sumBtcValue) - float(balance.loc["BTC"]["btcValue"])) / float(rate)) * 1e7) * 1e-7
+        coinAmount = np.floor((sumAmount - (float(sumBtcValue) - float(balance.loc[self.basicCoin]["btcValue"])) / float(rate)) * 1e7) * 1e-7
         if float(rate)*coinAmount<0.0001:
             return
         return self.buy(self.basicCoin + "_" + coin, rate, coinAmount)
@@ -412,8 +412,8 @@ class CustumPoloniex(poloniex.Poloniex):
         """Buy coin with market price as estimated btcValue."""
         self.cancelOnOrder(coin)
         balance = self.myAvailableCompleteBalances()
-        if len(np.where(balance.index=="BTC")[0])==0: return
-        if float(btcValue)>float(balance.loc["BTC"]["btcValue"]):
+        if len(np.where(balance.index==self.basicCoin)[0])==0: return
+        if float(btcValue)>float(balance.loc[self.basicCoin]["btcValue"]):
             return self.marketBuyAll(coin)
         asks = pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin)).asks
         sumBtcValue = 0.0
