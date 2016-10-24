@@ -45,6 +45,7 @@ class PredictionPrice(object):
             self.numFeature = numFeature
             self.numTrainSample = numTrainSample
         self.standarizationFeatureFlag = standarizationFeatureFlag
+        self.featureMean_, self.featureStd_ = [], []
 
         self.numStudyTrial = numStudyTrial
         self.gmailAddress = gmailAddress
@@ -267,20 +268,29 @@ class PredictionPrice(object):
             self.tomorrowPriceFlag_ = False
         return self.tomorrowPriceProbability_
 
-    def prediction(self,sampleData,classData,trainStartIndex, numFeature, numTrainSample):
-        train_X, train_y = self.preparationTrainSample(sampleData,classData,trainStartIndex, numFeature, numTrainSample)
-        X = sampleData[trainStartIndex:trainStartIndex + numFeature]
+    def prediction(self, sampleData, classData, trainStartIndex, numFeature, numTrainSample):
+        train_X, train_y = self.preparationTrainSample(sampleData, classData, trainStartIndex, numFeature, numTrainSample)
+        X = np.array([sampleData[trainStartIndex:trainStartIndex + numFeature]])
+        if self.standarizationFeatureFlag:
+            X = self.standarizationFeature(X)
         y = []
         for i in range(0, self.numStudyTrial):
             clf = tree.DecisionTreeClassifier()
             clf.fit(train_X, train_y)
-            y.append(clf.predict([X])[0])
+            y.append(clf.predict(X)[0])
         return sum(y) * 1.0 / len(y)
 
-    def standarizationFeature(self,X):
+    def standarizationFeature(self, X):
         numTrainSample, numFeature = np.shape(X)
-        for i in range(numFeature):
-            X[:, i] = (X[:, i] - X[:, i].mean()) / X[:, i].std()
+        if (self.featureMean_ == [] and self.featureStd_ == []):
+            for i in range(numFeature):
+                X[:, i] = (X[:, i] - X[:, i].mean()) / X[:, i].std()
+                self.featureMean_.append(X[:, i].mean())
+                self.featureStd_.append(X[:, i].std())
+        else:
+            for i in range(numFeature):
+                X[:, i] = (X[:, i] - self.featureMean_[i]) / self.featureStd_[i]
+            self.featureMean_ ,self.featureStd_ = [], []
         return X
 
     def quantizer(self, y):
