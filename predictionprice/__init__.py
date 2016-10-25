@@ -21,6 +21,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn import tree
+from sklearn.preprocessing import StandardScaler
 import poloniex
 import logging
 
@@ -45,7 +46,6 @@ class PredictionPrice(object):
             self.numFeature = numFeature
             self.numTrainSample = numTrainSample
         self.standarizationFeatureFlag = standarizationFeatureFlag
-        self.featureMean_, self.featureStd_ = [], []
 
         self.numStudyTrial = numStudyTrial
         self.gmailAddress = gmailAddress
@@ -272,7 +272,7 @@ class PredictionPrice(object):
         train_X, train_y = self.preparationTrainSample(sampleData, classData, trainStartIndex, numFeature, numTrainSample)
         X = np.array([sampleData[trainStartIndex:trainStartIndex + numFeature]])
         if self.standarizationFeatureFlag:
-            X = self.standarizationFeature(X)
+            train_X, X = self.standarizationFeature(train_X, X)
         y = []
         for i in range(0, self.numStudyTrial):
             clf = tree.DecisionTreeClassifier()
@@ -280,18 +280,11 @@ class PredictionPrice(object):
             y.append(clf.predict(X)[0])
         return sum(y) * 1.0 / len(y)
 
-    def standarizationFeature(self, X):
-        numTrainSample, numFeature = np.shape(X)
-        if (self.featureMean_ == [] and self.featureStd_ == []):
-            for i in range(numFeature):
-                X[:, i] = (X[:, i] - X[:, i].mean()) / X[:, i].std()
-                self.featureMean_.append(X[:, i].mean())
-                self.featureStd_.append(X[:, i].std())
-        else:
-            for i in range(numFeature):
-                X[:, i] = (X[:, i] - self.featureMean_[i]) / self.featureStd_[i]
-            self.featureMean_ ,self.featureStd_ = [], []
-        return X
+    def standarizationFeature(self, train_X, test_X):
+        sc = StandardScaler()
+        train_X_std = sc.fit_transform(train_X)
+        test_X_std = sc.transform(test_X)
+        return train_X_std, test_X_std
 
     def quantizer(self, y):
         return np.where(np.array(y) >= 0.0, 1, -1)
