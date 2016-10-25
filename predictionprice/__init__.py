@@ -1,10 +1,9 @@
+# -*- coding: utf-8 -*-
 """
 Copyright (c) 2016 Tylor Darden
 Released under the MIT license
 http://opensource.org/licenses/mit-license.php
 """
-
-# -*- coding: utf-8 -*-
 import sys
 import os
 import pytz
@@ -80,118 +79,79 @@ class PredictionPrice(object):
                 self.appreciationRate_ = self.getAppreciationRate(self.chartData_.open)
                 self.chartDataLatestDayStr = str(self.chartData_.date[0])[0:10]
 
-    def sendMail(self,body):
-        if self.gmailAddress=="" or self.gmailAddressPassword=="":
-            return "Set your gmail address and password."
-        # ---Create message
-        msg = email.MIMEMultipart.MIMEMultipart()
-        msg["From"] = self.gmailAddress
-        msg["To"] = self.gmailAddress
-        msg["Date"] = email.Utils.formatdate()
-        msg["Subject"] = "TomorrowPricePrediction( " + self.currentPair + " )"
-        msg.attach(email.MIMEText.MIMEText(body))
-        # ---AttachimentFile
-        attachimentFiles=[]
-        if os.path.exists(self.workingDirPath + "/backTest_" + self.currentPair +".png"):
-            attachimentFiles.append(self.workingDirPath + "/backTest_" + self.currentPair +".png")
-        if os.path.exists(self.workingDirPath + "/backTestOptResult_" + self.currentPair +".png"):
-            attachimentFiles.append(self.workingDirPath + "/backTestOptResult_" + self.currentPair + ".png")
-        for afn in attachimentFiles:
-            img = open(afn, "rb").read()
-            mimg = email.MIMEImage.MIMEImage(img, "png", filename=afn)
-            msg.attach(mimg)
-        # ---SendMail
-        smtpobj = smtplib.SMTP("smtp.gmail.com", 587)
-        smtpobj.ehlo()
-        smtpobj.starttls()
-        smtpobj.login(self.gmailAddress, self.gmailAddressPassword)
-        smtpobj.sendmail(self.gmailAddress, self.gmailAddress, msg.as_string())
-        smtpobj.close()
+    def reverseDataFrame(self,dataFrame):
+        """Reverse the index of chart data as last data comes first."""
+        dataFrame = dataFrame[::-1]
+        dataFrame.index = dataFrame.index[::-1]
+        return dataFrame
 
-    def fit(self, sampleData, classData):
-        self.backTest(sampleData, classData, self.numFeature, self.numTrainSample, True)
-        self.setTomorrowPriceProbability(sampleData, classData)
+    def getChartData(self):
+        """Get chart data."""
+        polo = poloniex.Poloniex(timeout = 10, coach = True)
+        chartData = pd.DataFrame(polo.marketChart(self.currentPair, period=polo.DAY, start=time.time() - polo.DAY * 500,end=time.time()))
+        chartData.date = pd.DataFrame([datetime.datetime.fromtimestamp(chartData.date[i]).date() for i in range(len(chartData.date))])
+        return self.reverseDataFrame(chartData)
 
-    def getComment(self):
-        commentStr=""
-        commentStr += "-----------------------------------------\n"
-        commentStr += "Chart data info.\n"
-        commentStr += "-----------------------------------------\n"
-        commentStr += "CurrentPair: " + self.currentPair + "\n"
-        commentStr += "Today: " + self.todayStr + "\n"
-        commentStr += "LatestDayInData: " + self.chartDataLatestDayStr + "\n"
-        commentStr += "LatestOpenPriceInData: " + str(self.chartData_.open[0]) + "\n"
-        commentStr += "PreviousDayInData: " + str(self.chartData_.date[1])[0:10] + "\n"
-        commentStr += "PreviousOpenPriceInData: " + str(self.chartData_.open[1]) + "\n"
-        commentStr += "-----------------------------------------\n"
-        commentStr += "Back test info.\n"
-        commentStr += "-----------------------------------------\n"
-        if self.useBackTestOptResult:
-            commentStr += "ExecOptDay: " + str(self.backTestOptResult_["dateOpt"])[0:19] + "\n"
+    def saveChartData(self,chartData):
+        """Save chart data to a pickle file. You can load it with loadChartData() for debug."""
+        with open("chartData_"+ self.currentPair + ".pickle", mode="wb") as f:
+            pickle.dump(chartData, f)
+        return
+
+    def loadChartData(self):
+        """You can load chart data from a pickle file. You have to save chart data with saveChartData() before calling."""
+        with open("chartData_"+ self.currentPair + ".pickle", mode="rb") as f:
+            chartData = pickle.load(f)
+        return chartData
+
+    def getAppreciationRate(self,price):
+        """Transrate chart price to appreciation rate."""
+        return np.append(-np.diff(price) / price[1:].values,0)
+
+    def quantizer(self, y):
+        """Transrate appreciation rate to -1 or 1 for preparing teacher data."""
+        return np.where(np.array(y) >= 0.0, 1, -1)
+
+    def standarizationFeature(self, train_X, test_X):
+        """Standarize feature data."""
+        sc = StandardScaler()
+        train_X_std = sc.fit_transform(train_X)
+        test_X_std = sc.transform(test_X)
+        return train_X_std, test_X_std
+
+    def preparationTrainSample(self,sampleData,classData,trainStartIndex, numFeature, numTrainSample):
+        """Prepare training sample."""
+        train_X = []
+        train_y = []
+        for i in range(numTrainSample):
+            train_X.append(sampleData[trainStartIndex + i + 1:trainStartIndex + numFeature + i + 1])
+            train_y.append(classData[trainStartIndex + i])
+        return np.array(train_X), np.array(train_y)
+
+    def prediction(self, sampleData, classData, trainStartIndex, numFeature, numTrainSample):
+        """Return probability of price rise."""
+        train_X, train_y = self.preparationTrainSample(sampleData, classData, trainStartIndex, numFeature, numTrainSample)
+        X = np.array([sampleData[trainStartIndex:trainStartIndex + numFeature]])
+        if self.standarizationFeatureFlag:
+            train_X, X = self.standarizationFeature(train_X, X)
+        y = []
+        for i in range(0, self.numStudyTrial):
+            clf = tree.DecisionTreeClassifier()
+            clf.fit(train_X, train_y)
+            y.append(clf.predict(X)[0])
+        return sum(y) * 1.0 / len(y)
+
+    def setTomorrowPriceProbability(self, sampleData, classData):
+        """Set probability of price rise and buying signal to menber valiables."""
+        self.tomorrowPriceProbability_ = (self.prediction(sampleData, classData, 0, self.numFeature, self.numTrainSample) + 1.0) / 2.0
+        if self.tomorrowPriceProbability_>0.5:
+            self.tomorrowPriceFlag_ = True
         else:
-            commentStr += "ExecOptDay: Nan\n"
-        commentStr += "NumFeature: " + str(self.numFeature) + "\n"
-        commentStr += "NumTrainSample: " + str(self.numTrainSample) + "\n"
-        commentStr += "AccuracyRateUp[%]: " + str(round(self.backTestResult_["AccuracyRateUp"].values[0]*100, 1)) + "\n"
-        commentStr += "AccuracyRateDown[%]: " + str(round(self.backTestResult_["AccuracyRateDown"].values[0]*100, 1)) + "\n"
-        commentStr += "InitialFund: " + str(self.backTestResult_["InitialFund"].values[0]) + "\n"
-        commentStr += "FinalFund: " + str(self.backTestResult_["FinalFund"].values[0]) + "\n"
-        commentStr += "IncreasedFundRatio[%]: " + str(round(self.backTestResult_["IncreasedFundRatio"].values[0]*100, 1)) + "\n"
-        commentStr += "InitialCurrentPrice: " + str(self.backTestResult_["InitialCurrentPrice"].values[0]) + "\n"
-        commentStr += "FinalCurrentPrice: " + str(self.backTestResult_["FinalCurrentPrice"].values[0]) + "\n"
-        commentStr += "IncreasedCurrentPriceRatio[%]: " + str(round(self.backTestResult_["IncreasedCurrentPriceRatio"].values[0]*100, 1)) + "\n"
-        commentStr += "-----------------------------------------\n"
-        commentStr += "Tomorrow " + self.currentPair + " price prediction\n"
-        commentStr += "-----------------------------------------\n"
-        commentStr += "TomorrowPriceRise?: " + str(self.tomorrowPriceFlag_) +"\n"
-        commentStr += "Probability[%]: " + str(round(self.tomorrowPriceProbability_*100,1)) +"\n"
-        return commentStr
-
-
-    def backTestOptimization(self, sampleData, classData):
-        X = np.arange(self.backTestOptNumFeatureMin, self.backTestOptNumFeatureMax + 1, 1)
-        Y = np.arange(self.backTestOptNumTrainSampleMin, self.backTestOptNumTrainSampleMax + 1, 1)
-        X, Y = np.meshgrid(X, Y)
-        Z = np.zeros([len(Y[:]), len(X[0])])
-
-        for i in range(0, len(X[0])):
-            for j in range(0, len(Y[:])):
-                Z[j][i] = self.backTest(sampleData, classData, X[j][i], Y[j][i], False)["IncreasedFundRatio"].values[0]
-                print("-" * 80)
-                print("NumFeatur: " + str(X[j][i]))
-                print("NumTrainSample: " + str(Y[j][i]))
-                print("IncreasedFundRatio[%]: " + str(round(Z[j][i] * 100, 1)))
-
-        maxZRow = np.where(Z == np.max(Z))[0][0]
-        maxZCol = np.where(Z == np.max(Z))[1][0]
-
-        numFeatureOpt = X[maxZRow][maxZCol]
-        numTrainSampleOpt = Y[maxZRow][maxZCol]
-        dateOpt = datetime.datetime.now()
-
-        backTestOptResult = {"X": X, "Y": Y, "Z": Z, "numFeatureOpt": numFeatureOpt,
-                             "numTrainSampleOpt": numTrainSampleOpt, "dateOpt": dateOpt}
-        with open(self.workingDirPath + "/backTestOptResult_" + self.currentPair + ".pickle", mode='wb') as f:
-            pickle.dump(backTestOptResult, f)
-
-        print("-" * 30 + " Optimization Result " + "-" * 30)
-        print("NumFeatur: " + str(numFeatureOpt))
-        print("NumTrainSample: " + str(numTrainSampleOpt))
-        print("IncreasedFundRatio[%]: " + str(round(Z[maxZRow][maxZCol] * 100, 1)))
-
-        fig = plt.figure()
-        ax = Axes3D(fig)
-        ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=plt.cm.hot)
-        ax.contourf(X, Y, Z, zdir="z", offset=-2, cmap=plt.cm.hot)
-        ax.set_title("Back test optimization (" + self.currentPair + ")")
-        ax.set_xlabel("NumFeatur")
-        ax.set_ylabel("NumTrainSample")
-        ax.set_zlabel("IncreasedFundRatio")
-        ax.view_init(90, 90)
-        plt.savefig(self.workingDirPath + "/backTestOptResult_" + self.currentPair + ".png", dpi=50)
-        plt.close()
+            self.tomorrowPriceFlag_ = False
+        return self.tomorrowPriceProbability_
 
     def backTest(self, sampleData, classData, numFeature, numTrainSample, saveBackTestGraph):
+        """Do back test and return the result."""
         Y = []
         YPrediction = []
         fund = [self.backTestInitialFund]
@@ -260,73 +220,125 @@ class PredictionPrice(object):
 
         return backTestResult
 
-    def setTomorrowPriceProbability(self, sampleData, classData):
-        self.tomorrowPriceProbability_ = (self.prediction(sampleData, classData, 0, self.numFeature, self.numTrainSample) + 1.0) / 2.0
-        if self.tomorrowPriceProbability_>0.5:
-            self.tomorrowPriceFlag_ = True
+    def backTestOptimization(self, sampleData, classData):
+        """Optimize the number of features and training samples and save the results to a pickle file."""
+        X = np.arange(self.backTestOptNumFeatureMin, self.backTestOptNumFeatureMax + 1, 1)
+        Y = np.arange(self.backTestOptNumTrainSampleMin, self.backTestOptNumTrainSampleMax + 1, 1)
+        X, Y = np.meshgrid(X, Y)
+        Z = np.zeros([len(Y[:]), len(X[0])])
+
+        for i in range(0, len(X[0])):
+            for j in range(0, len(Y[:])):
+                Z[j][i] = self.backTest(sampleData, classData, X[j][i], Y[j][i], False)["IncreasedFundRatio"].values[0]
+                print("-" * 80)
+                print("NumFeatur: " + str(X[j][i]))
+                print("NumTrainSample: " + str(Y[j][i]))
+                print("IncreasedFundRatio[%]: " + str(round(Z[j][i] * 100, 1)))
+
+        maxZRow = np.where(Z == np.max(Z))[0][0]
+        maxZCol = np.where(Z == np.max(Z))[1][0]
+
+        numFeatureOpt = X[maxZRow][maxZCol]
+        numTrainSampleOpt = Y[maxZRow][maxZCol]
+        dateOpt = datetime.datetime.now()
+
+        backTestOptResult = {"X": X, "Y": Y, "Z": Z, "numFeatureOpt": numFeatureOpt,
+                             "numTrainSampleOpt": numTrainSampleOpt, "dateOpt": dateOpt}
+        with open(self.workingDirPath + "/backTestOptResult_" + self.currentPair + ".pickle", mode='wb') as f:
+            pickle.dump(backTestOptResult, f)
+
+        print("-" * 30 + " Optimization Result " + "-" * 30)
+        print("NumFeatur: " + str(numFeatureOpt))
+        print("NumTrainSample: " + str(numTrainSampleOpt))
+        print("IncreasedFundRatio[%]: " + str(round(Z[maxZRow][maxZCol] * 100, 1)))
+
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=plt.cm.hot)
+        ax.contourf(X, Y, Z, zdir="z", offset=-2, cmap=plt.cm.hot)
+        ax.set_title("Back test optimization (" + self.currentPair + ")")
+        ax.set_xlabel("NumFeatur")
+        ax.set_ylabel("NumTrainSample")
+        ax.set_zlabel("IncreasedFundRatio")
+        ax.view_init(90, 90)
+        plt.savefig(self.workingDirPath + "/backTestOptResult_" + self.currentPair + ".png", dpi=50)
+        plt.close()
+
+    def fit(self, sampleData, classData):
+        """Call backTest() and setTomorrowPriceProbability() in one sitting."""
+        self.backTest(sampleData, classData, self.numFeature, self.numTrainSample, True)
+        self.setTomorrowPriceProbability(sampleData, classData)
+
+    def getComment(self):
+        """Make summary sentence that include the result of the back test and the prediction of the price rise."""
+        commentStr=""
+        commentStr += "-----------------------------------------\n"
+        commentStr += "Chart data info.\n"
+        commentStr += "-----------------------------------------\n"
+        commentStr += "CurrentPair: " + self.currentPair + "\n"
+        commentStr += "Today: " + self.todayStr + "\n"
+        commentStr += "LatestDayInData: " + self.chartDataLatestDayStr + "\n"
+        commentStr += "LatestOpenPriceInData: " + str(self.chartData_.open[0]) + "\n"
+        commentStr += "PreviousDayInData: " + str(self.chartData_.date[1])[0:10] + "\n"
+        commentStr += "PreviousOpenPriceInData: " + str(self.chartData_.open[1]) + "\n"
+        commentStr += "-----------------------------------------\n"
+        commentStr += "Back test info.\n"
+        commentStr += "-----------------------------------------\n"
+        if self.useBackTestOptResult:
+            commentStr += "ExecOptDay: " + str(self.backTestOptResult_["dateOpt"])[0:19] + "\n"
         else:
-            self.tomorrowPriceFlag_ = False
-        return self.tomorrowPriceProbability_
+            commentStr += "ExecOptDay: Nan\n"
+        commentStr += "NumFeature: " + str(self.numFeature) + "\n"
+        commentStr += "NumTrainSample: " + str(self.numTrainSample) + "\n"
+        commentStr += "AccuracyRateUp[%]: " + str(round(self.backTestResult_["AccuracyRateUp"].values[0]*100, 1)) + "\n"
+        commentStr += "AccuracyRateDown[%]: " + str(round(self.backTestResult_["AccuracyRateDown"].values[0]*100, 1)) + "\n"
+        commentStr += "InitialFund: " + str(self.backTestResult_["InitialFund"].values[0]) + "\n"
+        commentStr += "FinalFund: " + str(self.backTestResult_["FinalFund"].values[0]) + "\n"
+        commentStr += "IncreasedFundRatio[%]: " + str(round(self.backTestResult_["IncreasedFundRatio"].values[0]*100, 1)) + "\n"
+        commentStr += "InitialCurrentPrice: " + str(self.backTestResult_["InitialCurrentPrice"].values[0]) + "\n"
+        commentStr += "FinalCurrentPrice: " + str(self.backTestResult_["FinalCurrentPrice"].values[0]) + "\n"
+        commentStr += "IncreasedCurrentPriceRatio[%]: " + str(round(self.backTestResult_["IncreasedCurrentPriceRatio"].values[0]*100, 1)) + "\n"
+        commentStr += "-----------------------------------------\n"
+        commentStr += "Tomorrow " + self.currentPair + " price prediction\n"
+        commentStr += "-----------------------------------------\n"
+        commentStr += "TomorrowPriceRise?: " + str(self.tomorrowPriceFlag_) +"\n"
+        commentStr += "Probability[%]: " + str(round(self.tomorrowPriceProbability_*100,1)) +"\n"
+        return commentStr
 
-    def prediction(self, sampleData, classData, trainStartIndex, numFeature, numTrainSample):
-        train_X, train_y = self.preparationTrainSample(sampleData, classData, trainStartIndex, numFeature, numTrainSample)
-        X = np.array([sampleData[trainStartIndex:trainStartIndex + numFeature]])
-        if self.standarizationFeatureFlag:
-            train_X, X = self.standarizationFeature(train_X, X)
-        y = []
-        for i in range(0, self.numStudyTrial):
-            clf = tree.DecisionTreeClassifier()
-            clf.fit(train_X, train_y)
-            y.append(clf.predict(X)[0])
-        return sum(y) * 1.0 / len(y)
-
-    def standarizationFeature(self, train_X, test_X):
-        sc = StandardScaler()
-        train_X_std = sc.fit_transform(train_X)
-        test_X_std = sc.transform(test_X)
-        return train_X_std, test_X_std
-
-    def quantizer(self, y):
-        return np.where(np.array(y) >= 0.0, 1, -1)
-
-    def preparationTrainSample(self,sampleData,classData,trainStartIndex, numFeature, numTrainSample):
-        train_X = []
-        train_y = []
-        for i in range(numTrainSample):
-            train_X.append(sampleData[trainStartIndex + i + 1:trainStartIndex + numFeature + i + 1])
-            train_y.append(classData[trainStartIndex + i])
-        return np.array(train_X), np.array(train_y)
-
-    def reverseDataFrame(self,dataFrame):
-        dataFrame = dataFrame[::-1]
-        dataFrame.index = dataFrame.index[::-1]
-        return dataFrame
-
-    def getChartData(self):
-        polo = poloniex.Poloniex(timeout = 10, coach = True)
-        chartData = pd.DataFrame(polo.marketChart(self.currentPair, period=polo.DAY, start=time.time() - polo.DAY * 500,end=time.time()))
-        chartData.date = pd.DataFrame([datetime.datetime.fromtimestamp(chartData.date[i]).date() for i in range(len(chartData.date))])
-        return self.reverseDataFrame(chartData)
-
-    def saveChartData(self,chartData):
-        with open("chartData_"+ self.currentPair + ".pickle", mode="wb") as f:
-            pickle.dump(chartData, f)
-        return
-
-    def loadChartData(self):
-        with open("chartData_"+ self.currentPair + ".pickle", mode="rb") as f:
-            chartData = pickle.load(f)
-        return chartData
-
-    def getAppreciationRate(self,price):
-        return np.append(-np.diff(price) / price[1:].values,0)
-
+    def sendMail(self, body):
+        """Send a mail to inform the summary of the prediction."""
+        if self.gmailAddress == "" or self.gmailAddressPassword == "":
+            return "Set your gmail address and password."
+        # ---Create message
+        msg = email.MIMEMultipart.MIMEMultipart()
+        msg["From"] = self.gmailAddress
+        msg["To"] = self.gmailAddress
+        msg["Date"] = email.Utils.formatdate()
+        msg["Subject"] = "TomorrowPricePrediction( " + self.currentPair + " )"
+        msg.attach(email.MIMEText.MIMEText(body))
+        # ---AttachimentFile
+        attachimentFiles = []
+        if os.path.exists(self.workingDirPath + "/backTest_" + self.currentPair + ".png"):
+            attachimentFiles.append(self.workingDirPath + "/backTest_" + self.currentPair + ".png")
+        if os.path.exists(self.workingDirPath + "/backTestOptResult_" + self.currentPair + ".png"):
+            attachimentFiles.append(self.workingDirPath + "/backTestOptResult_" + self.currentPair + ".png")
+        for afn in attachimentFiles:
+            img = open(afn, "rb").read()
+            mimg = email.MIMEImage.MIMEImage(img, "png", filename=afn)
+            msg.attach(mimg)
+        # ---SendMail
+        smtpobj = smtplib.SMTP("smtp.gmail.com", 587)
+        smtpobj.ehlo()
+        smtpobj.starttls()
+        smtpobj.login(self.gmailAddress, self.gmailAddressPassword)
+        smtpobj.sendmail(self.gmailAddress, self.gmailAddress, msg.as_string())
+        smtpobj.close()
 
 
 class CustumPoloniex(poloniex.Poloniex):
-    def __init__(self, APIKey=False, Secret=False,timeout=10, coach=True, loglevel=logging.WARNING, basicCoin="BTC",
-                 workingDirPath=".", gmailAddress="", gmailAddressPassword="",
-                 coins=[], buySigns=[] ):
+    def __init__(self, APIKey = False, Secret = False,timeout = 10, coach = True, loglevel = logging.WARNING, basicCoin = "BTC",
+                 workingDirPath = ".", gmailAddress = "", gmailAddressPassword = "",
+                 coins = [], buySigns = [] ):
         super(CustumPoloniex, self).__init__(APIKey, Secret, timeout, coach, loglevel)
         self.basicCoin = basicCoin
         self.workingDirPath = workingDirPath
@@ -335,14 +347,13 @@ class CustumPoloniex(poloniex.Poloniex):
         self.coins = coins
         self.buySigns = buySigns
 
-
     def myAvailableCompleteBalances(self):
-        """return AvailableCompleteBalances as pandas.DataFrame."""
+        """Return AvailableCompleteBalances as pandas.DataFrame."""
         balance = pd.DataFrame.from_dict(self.myCompleteBalances()).T
         return balance.iloc[np.where(balance["btcValue"] != "0.00000000")]
 
     def myEstimatedValueOfHoldings(self):
-        """return EstimatedValueOfHoldings."""
+        """Return EstimatedValueOfHoldings."""
         balance = self.myAvailableCompleteBalances()
         estimatedValueOfHoldingsAsBTC = np.sum(np.float_(balance.iloc[:, 1]))
         lastValueUSDT_BTC = pd.DataFrame.from_dict(self.marketTicker()).T.loc["USDT_BTC"]["last"]
@@ -350,27 +361,14 @@ class CustumPoloniex(poloniex.Poloniex):
         return estimatedValueOfHoldingsAsBTC, estimatedValueOfHoldingsAsUSD
 
     def cancelOnOrder(self,coin):
-        """cancel on Order"""
+        """Cancel on Order"""
         balance = self.myAvailableCompleteBalances()
         if len(np.where(balance.index==coin)[0])==0: return
 
         while balance.loc[coin]["onOrders"]!="0.00000000":
-            orderId=pd.DataFrame.from_dict(self.myOrders(self.basicCoin + "_" + coin))["orderNumber"].tolist()[0]
+            orderId = pd.DataFrame.from_dict(self.myOrders(self.basicCoin + "_" + coin))["orderNumber"].tolist()[0]
             self.cancelOrder(orderId)
             balance = self.myAvailableCompleteBalances()
-
-    def marketSellAll(self, coin):
-        """Sell all coin with market price."""
-        self.cancelOnOrder(coin)
-        balance = self.myAvailableCompleteBalances()
-        if len(np.where(balance.index==coin)[0])==0: return
-        bids=pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin)).bids
-        sumBtcValue=0.0
-        for rate, amount in zip(np.array(bids.tolist())[:,0],np.array(bids.tolist())[:,1]):
-            sumBtcValue += float(rate)*float(amount)
-            if float(balance.loc[coin]["btcValue"]) < sumBtcValue:
-                break
-        return self.sell(self.basicCoin + "_" + coin, rate, balance.loc[coin]["available"])
 
     def marketSell(self, coin, btcValue):
         """Sell coin with market price as estimated btcValue."""
@@ -390,24 +388,18 @@ class CustumPoloniex(poloniex.Poloniex):
         coinAmount = np.floor((sumAmount - (float(sumBtcValue) - float(btcValue))/float(rate)) * 1e7) * 1e-7
         return self.sell(self.basicCoin + "_" + coin, rate, coinAmount)
 
-
-    def marketBuyAll(self, coin):
-        """Buy coin with market price as much as possible."""
+    def marketSellAll(self, coin):
+        """Sell all coin with market price."""
         self.cancelOnOrder(coin)
         balance = self.myAvailableCompleteBalances()
-        if len(np.where(balance.index==self.basicCoin)[0])==0: return
-        asks = pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin)).asks
+        if len(np.where(balance.index==coin)[0])==0: return
+        bids = pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin)).bids
         sumBtcValue = 0.0
-        sumAmount = 0.0
-        for rate, amount in zip(np.array(asks.tolist())[:,0],np.array(asks.tolist())[:,1]):
-            sumAmount += float(amount)
+        for rate, amount in zip(np.array(bids.tolist())[:,0],np.array(bids.tolist())[:,1]):
             sumBtcValue += float(rate)*float(amount)
-            if float(balance.loc[self.basicCoin]["btcValue"]) < sumBtcValue:
+            if float(balance.loc[coin]["btcValue"]) < sumBtcValue:
                 break
-        coinAmount = np.floor((sumAmount - (float(sumBtcValue) - float(balance.loc[self.basicCoin]["btcValue"])) / float(rate)) * 1e7) * 1e-7
-        if float(rate)*coinAmount<0.0001:
-            return
-        return self.buy(self.basicCoin + "_" + coin, rate, coinAmount)
+        return self.sell(self.basicCoin + "_" + coin, rate, balance.loc[coin]["available"])
 
     def marketBuy(self, coin, btcValue):
         """Buy coin with market price as estimated btcValue."""
@@ -427,9 +419,29 @@ class CustumPoloniex(poloniex.Poloniex):
         coinAmount = np.floor((sumAmount - (float(sumBtcValue) - float(btcValue)) / float(rate)) * 1e7) * 1e-7
         return self.buy(self.basicCoin + "_" + coin, rate, coinAmount)
 
+    def marketBuyAll(self, coin):
+        """Buy coin with market price as much as possible."""
+        self.cancelOnOrder(coin)
+        balance = self.myAvailableCompleteBalances()
+        if len(np.where(balance.index == self.basicCoin)[0]) == 0: return
+        asks = pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin)).asks
+        sumBtcValue = 0.0
+        sumAmount = 0.0
+        for rate, amount in zip(np.array(asks.tolist())[:, 0], np.array(asks.tolist())[:, 1]):
+            sumAmount += float(amount)
+            sumBtcValue += float(rate) * float(amount)
+            if float(balance.loc[self.basicCoin]["btcValue"]) < sumBtcValue:
+                break
+        coinAmount = np.floor((
+                              sumAmount - (float(sumBtcValue) - float(balance.loc[self.basicCoin]["btcValue"])) / float(
+                                  rate)) * 1e7) * 1e-7
+        if float(rate) * coinAmount < 0.0001:
+            return
+        return self.buy(self.basicCoin + "_" + coin, rate, coinAmount)
+    
     def fitSell(self):
         """Sell coins in accordance with buySigns."""
-        balance=self.myAvailableCompleteBalances()
+        balance = self.myAvailableCompleteBalances()
         for coinIndex in range(len(self.coins)):
             if not self.buySigns[coinIndex]: #Sign is Sell?
                 if len(np.where(balance.index == self.coins[coinIndex])[0]) != 0:  # Holding the coin?
@@ -437,7 +449,7 @@ class CustumPoloniex(poloniex.Poloniex):
 
     def fitBuy(self):
         """Buy coins in accordance with buySigns."""
-        balance=self.myAvailableCompleteBalances()
+        balance = self.myAvailableCompleteBalances()
         if np.sum(self.buySigns)==0: # All signs are sell?
             return
         else:
