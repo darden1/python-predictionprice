@@ -295,8 +295,6 @@ class PredictionPrice(object):
         for i in range(numTrainSample):
             train_X.append(sampleData[trainStartIndex + i + 1:trainStartIndex + numFeature + i + 1])
             train_y.append(classData[trainStartIndex + i])
-        if self.standarizationFeatureFlag:
-            train_X = self.standarizationFeature(np.array(train_X))
         return np.array(train_X), np.array(train_y)
 
     def reverseDataFrame(self,dataFrame):
