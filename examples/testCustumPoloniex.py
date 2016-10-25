@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 from predictionprice import CustumPoloniex
 
-myAPIKey="************"
-mySecret="**********************************************************"
+myAPIKey = "************"
+mySecret = "**********************************************************"
 
-polo = CustumPoloniex(APIKey=myAPIKey, Secret=mySecret, timeout=3, coach=True)
-balance=polo.myAvailableCompleteBalances()
+polo = CustumPoloniex(APIKey = myAPIKey, Secret = mySecret, timeout = 10, coach = True)
+myBTC, myUSD = polo.myEstimatedValueOfHoldings()
+balance = polo.myAvailableCompleteBalances()
 
-myBTC,myUSD=polo.myEstimatedValueOfHoldings()
-
-print("Your Fund is " + str(myBTC) + " BTC")
-print("Your Fund is " + str(myUSD) + " USD")
-balance
+print("-"*35)
+print("Your total fund:")
+print(str(myBTC) + " BTC")
+print(str(myUSD) + " USD")
+print("\nBreakdown:")
+print(balance)
