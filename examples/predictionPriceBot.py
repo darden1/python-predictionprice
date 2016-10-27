@@ -27,12 +27,12 @@ def botRoutine():
 
     # --- Prediction price and back test
     for coinIndex in range(len(coins)):
-        pp = PredictionPrice(currentPair = basicCoin + "_" + coins[coinIndex], workingDirPath = workingDirPath,
-                             gmailAddress = myGmailAddress, gmailAddressPassword = myGmailAddressPassword,
-                             backTestOptNumFeatureMin = backTestOptParams[coinIndex][0],
-                             backTestOptNumFeatureMax = backTestOptParams[coinIndex][1],
-                             backTestOptNumTrainSampleMin = backTestOptParams[coinIndex][2],
-                             backTestOptNumTrainSampleMax = backTestOptParams[coinIndex][3])
+        pp = PredictionPrice(currentPair=basicCoin + "_" + coins[coinIndex], workingDirPath=workingDirPath,
+                             gmailAddress=myGmailAddress, gmailAddressPassword=myGmailAddressPassword,
+                             backTestOptNumFeatureMin=backTestOptParams[coinIndex][0],
+                             backTestOptNumFeatureMax=backTestOptParams[coinIndex][1],
+                             backTestOptNumTrainSampleMin=backTestOptParams[coinIndex][2],
+                             backTestOptNumTrainSampleMax=backTestOptParams[coinIndex][3])
 
         pp.fit(pp.appreciationRate_, pp.quantizer(pp.appreciationRate_))
         pp.sendMail(pp.getComment())
@@ -40,9 +40,9 @@ def botRoutine():
         tomorrwPricePrediction.append(pp.tomorrowPriceFlag_)
 
     # --- Fit balance
-    polo = CustumPoloniex(APIKey = myAPIKey, Secret = mySecret, workingDirPath = workingDirPath,
-                          gmailAddress = myGmailAddress, gmailAddressPassword = myGmailAddressPassword,
-                          coins = coins, buySigns = tomorrwPricePrediction)
+    polo = CustumPoloniex(APIKey=myAPIKey, Secret=mySecret, workingDirPath=workingDirPath,
+                          gmailAddress=myGmailAddress, gmailAddressPassword=myGmailAddressPassword,
+                          coins=coins, buySigns=tomorrwPricePrediction)
     polo.fitBalance()
     polo.sendMailBalance()
     polo.savePoloniexBalanceToCsv()

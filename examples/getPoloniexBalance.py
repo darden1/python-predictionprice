@@ -22,7 +22,7 @@ def main():
     myAPIKey="************************"
     mySecret="************************************************"
     
-    polo = Poloniex(APIKey = myAPIKey, Secret = mySecret, timeout = 10, coach = True)
+    polo = Poloniex(APIKey=myAPIKey, Secret=mySecret, timeout=10, coach=True)
     balanceAll = polo.myCompleteBalances()
 
     myBTC = 0

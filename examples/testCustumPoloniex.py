@@ -4,7 +4,7 @@ from predictionprice import CustumPoloniex
 myAPIKey = "************"
 mySecret = "**********************************************************"
 
-polo = CustumPoloniex(APIKey = myAPIKey, Secret = mySecret, timeout = 10, coach = True)
+polo = CustumPoloniex(APIKey=myAPIKey, Secret=mySecret, timeout=10, coach=True)
 myBTC, myUSD = polo.myEstimatedValueOfHoldings()
 balance = polo.myAvailableCompleteBalances()
 
