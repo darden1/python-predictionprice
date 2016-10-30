@@ -4,23 +4,24 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from predictionprice import CustumPoloniex
 from predictionprice import PredictionPrice
 
+myGmailAddress = "********@gmail.com"
+myGmailAddressPassword = "************"
+myAPIKey="************************"
+mySecret="************************************************"
+
+coins = ["ETH", "XMR", "XRP", "FCT", "DASH"]
+backTestOptParams = [
+    [20, 40, 20, 40],
+    [20, 40, 20, 40],
+    [20, 40, 20, 40],
+    [20, 40, 20, 40],
+    [20, 40, 20, 40]]
+
+basicCoin = "BTC"
+workingDirPath = os.path.dirname(os.path.abspath(__file__))
+
 
 def botRoutine():
-    myGmailAddress = "********@gmail.com"
-    myGmailAddressPassword = "************"
-    myAPIKey="************************"
-    mySecret="************************************************"
-
-    coins = ["ETH", "XMR", "XRP", "FCT", "DASH"]
-    backTestOptParams = [
-        [20, 40, 20, 40],
-        [20, 40, 20, 40],
-        [20, 40, 20, 40],
-        [20, 40, 20, 40],
-        [20, 40, 20, 40]]
-
-    basicCoin = "BTC"
-    workingDirPath = os.path.dirname(os.path.abspath(__file__))
 
     ppList = []
     tomorrwPricePrediction = []
