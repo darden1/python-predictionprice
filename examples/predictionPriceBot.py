@@ -38,7 +38,10 @@ def botRoutine():
         pp.fit(pp.appreciationRate_, pp.quantizer(pp.appreciationRate_))
         pp.sendMail(pp.getComment())
         ppList.append(pp)
-        tomorrwPricePrediction.append(pp.tomorrowPriceFlag_)
+        if pp.backTestResult_["AccuracyRateUp"].values > 0.5:
+            tomorrwPricePrediction.append(pp.tomorrowPriceFlag_)
+        else:
+            tomorrwPricePrediction.append(False)
 
     # --- Fit balance
     polo = CustumPoloniex(APIKey=myAPIKey, Secret=mySecret, workingDirPath=workingDirPath,
