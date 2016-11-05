@@ -230,10 +230,10 @@ class PredictionPrice(object):
         for i in range(0, len(X[0])):
             for j in range(0, len(Y[:])):
                 Z[j][i] = self.backTest(sampleData, classData, X[j][i], Y[j][i], False)["IncreasedFundRatio"].values[0]
-                print("-" * 80)
-                print("NumFeatur: " + str(X[j][i]))
-                print("NumTrainSample: " + str(Y[j][i]))
-                print("IncreasedFundRatio[%]: " + str(round(Z[j][i] * 100, 1)))
+                #--- print("-" * 80)
+                #--- print("NumFeatur: " + str(X[j][i]))
+                #--- print("NumTrainSample: " + str(Y[j][i]))
+                #--- print("IncreasedFundRatio[%]: " + str(round(Z[j][i] * 100, 1)))
 
         maxZRow = np.where(Z == np.max(Z))[0][0]
         maxZCol = np.where(Z == np.max(Z))[1][0]
