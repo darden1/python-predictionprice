@@ -36,7 +36,7 @@ pip uninstall predictionprice
 - This bot execute followings one time a day.
   - Back test.
   - Prediction of rise or fall of the virtual currency tomorrow price.
-  - Trading in accordance with the prediction with market price.
+  - Trading with market price in accordance with the prediction.
   - Optimization of the number of the features and training samples.
   - Sending e-mail to inform the results of the execution.
 - Open examples/predictionPriceBot.py and set your gmail address, password, poloniex.com APIKey and Secret.
