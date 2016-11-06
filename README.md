@@ -51,5 +51,5 @@ ps auxw | grep python
 - You can change the combination of the currency you want to trade with `coins` and `basicCoin`.
 
 ###  Caution:
-- It is **absolutely not guaranteed** to increase your assets by using this bot.
+- It is **not absolutely guaranteed** to increase your assets by using this bot.
 - I hope if this could help you to create a better bot. (I would be very happy if you would inform me when you could achieve it.)
