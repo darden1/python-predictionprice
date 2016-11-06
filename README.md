@@ -8,7 +8,7 @@
   - Prediction the rise or fall of tomorrow's virtual currency price by machine learning using the scikit-learn.
   - Implementation of the back test.
   - Optimization of the number of the features and training samples.
-    - The feature is a set of the sequencial past prices.
+    - The features are represented with the sequencial past prices.
     - The training sample is a set of the features.
   - Implementation of the market trade with accessing to Poloniex.com in accordance with the predicted buying and selling signs.
   - Function to inform the results of the prediction and buying and selling by e-mail.
