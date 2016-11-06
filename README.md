@@ -48,7 +48,7 @@ nohup python predictionPriceBot.py > out.log 2> err.log &
 ```
 ps auxw | grep python
 ```
-- You can change the combination of the currency you want to trade with `coins` and `basicCoin`.
+- You can change the combination of the currency pair you want to trade with `coins` and `basicCoin`.
 
 ###  Caution:
 - It is **not absolutely guaranteed** to increase your assets by using this bot.
