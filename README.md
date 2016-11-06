@@ -32,7 +32,7 @@ pip uninstall predictionprice
 ```
 
 ### Usage:
-- An exampel of auto trading bot has already prepared.
+- An example of auto trading bot has already prepared.
 - This bot execute followings one time a day.
   - Back test.
   - Prediction of rise or fall of the virtual currency tomorrow price.
