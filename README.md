@@ -5,7 +5,7 @@
 - predictionprice module is a set of tools for making the bot to automatically trade according to the prediction of rise or fall of the virtual currency tomorrow price.
 - You can do mainly the followings by using this module.
   - To get the price of virtual currency from Poloniex.com
-  - Prediction the rise or fall of tomorrow's virtual currency price by machine learning decision tree algorism using the scikit-learn.
+  - Prediction the rise or fall of tomorrow's virtual currency price by machine learning decision tree algorithm using the scikit-learn.
   - Implementation of the back test.
   - Optimization of the number of the features and training samples.
     - The features are represented with the sequencial past prices.
@@ -52,4 +52,4 @@ ps auxw | grep python
 
 ###  Caution:
 - It is **not absolutely guaranteed** to increase your assets by using this bot.
-- I hope if this could help you to create a much better one than this bot. (I would be very happy if you would tell me the new algorism of the bot when you could achieve it.)
+- I hope if this could help you to create a much better one than this bot. (I would be very happy if you would tell me the new algorithm of the bot when you could achieve it.)
