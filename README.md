@@ -52,4 +52,4 @@ ps auxw | grep python
 
 ###  Caution:
 - It is **not absolutely guaranteed** to increase your assets by using this bot.
-- I hope if this could help you to create a much better one than this bot. (I would be very happy if you would inform me when you could achieve it.)
+- I hope if this could help you to create a much better one than this bot. (I would be very happy if you would tell me the new algorism of the bot when you could achieve it.)
