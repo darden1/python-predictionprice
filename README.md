@@ -1,5 +1,5 @@
-#**A module for a bot that trade the virtual currency automatically**
-#####_Tested on Python 2.7.12_
+# **A module for a bot that trade the virtual currency automatically**
+##### _Tested on Python 2.7.12_
 
 ### Features:
 - predictionprice module is a set of tools for making the bot to automatically trade according to the prediction of rise or fall of the virtual currency tomorrow price.
@@ -8,6 +8,8 @@
   - Prediction the rise or fall of tomorrow's virtual currency price by machine learning using the scikit-learn.
   - Implementation of the back test.
   - Optimization of the number of the features and training samples.
+    - Feature is a set of the sequencial past prices.
+    - Training sample is a set of the features.
   - Implementation of the market trade with accessing to Poloniex.com in accordance with the predicted buying and selling signs.
   - Function to inform the results of the prediction and buying and selling by e-mail.
 
@@ -30,6 +32,7 @@ pip uninstall predictionprice
 ```
 
 ### Usage:
+- An exampel of auto trading bot has already prepared.
 - Open examples/predictionPriceBot.py and set your gmail address, password, poloniex.com APIKey and Secret.
 - Run this script with nohup as following.
 ```
