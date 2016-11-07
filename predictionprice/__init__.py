@@ -27,8 +27,8 @@ import logging
 class PredictionPrice(object):
     def __init__(self, currentPair="BTC_ETH", workingDirPath=".",
                  gmailAddress="", gmailAddressPassword="",
-                 waitGettingTodaysChart = True, waitGettingTodaysChartTime = 60,
-                 numFeature = 30, numTrainSample = 30, standarizationFeatureFlag = True, numStudyTrial = 50,
+                 waitGettingTodaysChart=True, waitGettingTodaysChartTime=60,
+                 numFeature=30, numTrainSample=30, standarizationFeatureFlag=True, numStudyTrial=50,
                  useBackTestOptResult=True, backTestInitialFund=1000, backTestSpread=0, backTestDays=60,
                  backTestOptNumFeatureMin=20, backTestOptNumFeatureMax=40, backTestOptNumTrainSampleMin=20, backTestOptNumTrainSampleMax=40):
 
@@ -336,7 +336,7 @@ class PredictionPrice(object):
 
 
 class CustumPoloniex(poloniex.Poloniex):
-    def __init__(self, APIKey = False, Secret = False,timeout = 10, coach = True, loglevel = logging.WARNING, basicCoin = "BTC",
+    def __init__(self, APIKey=False, Secret=False,timeout=10, coach=True, loglevel=logging.WARNING, basicCoin="BTC",
                  workingDirPath = ".", gmailAddress = "", gmailAddressPassword = "",
                  coins = [], buySigns = [] ):
         super(CustumPoloniex, self).__init__(APIKey, Secret, timeout, coach, loglevel)
