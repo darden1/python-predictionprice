@@ -337,8 +337,8 @@ class PredictionPrice(object):
 
 class CustumPoloniex(poloniex.Poloniex):
     def __init__(self, APIKey=False, Secret=False,timeout=10, coach=True, loglevel=logging.WARNING, basicCoin="BTC",
-                 workingDirPath = ".", gmailAddress = "", gmailAddressPassword = "",
-                 coins = [], buySigns = [] ):
+                 workingDirPath=".", gmailAddress="", gmailAddressPassword="",
+                 coins=[], buySigns=[] ):
         super(CustumPoloniex, self).__init__(APIKey, Secret, timeout, coach, loglevel)
         self.basicCoin = basicCoin
         self.workingDirPath = workingDirPath
