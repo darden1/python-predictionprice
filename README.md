@@ -1,5 +1,6 @@
 # **A module for a bot that trade the virtual currency automatically**
 ##### _Tested on Python 2.7.12_
+##### Very thanks to [s4w3d0ff](https://github.com/s4w3d0ff) and [python-poloniex](https://github.com/s4w3d0ff/python-poloniex)
 
 ### Features:
 - predictionprice module is a set of tools for making the bot to automatically trade according to the prediction of rise or fall of the virtual currency tomorrow price.
