@@ -19,8 +19,8 @@ else:
 
 
 def main():
-    myAPIKey="************************"
-    mySecret="************************************************"
+    myAPIKey = "************************"
+    mySecret = "************************************************"
     
     polo = Poloniex(APIKey=myAPIKey, Secret=mySecret, timeout=10, coach=True)
     balanceAll = polo.myCompleteBalances()
