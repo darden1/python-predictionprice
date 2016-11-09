@@ -6,8 +6,8 @@ from predictionprice import PredictionPrice
 
 myGmailAddress = "********@gmail.com"
 myGmailAddressPassword = "************"
-myAPIKey="************************"
-mySecret="************************************************"
+myAPIKey = "************************"
+mySecret = "************************************************"
 
 coins = ["ETH", "XMR", "XRP", "FCT", "DASH"]
 backTestOptParams = [
