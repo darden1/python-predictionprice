@@ -15,7 +15,7 @@
   - Function to inform the results of the prediction and the trading by e-mail.
 
 ### Prerequired:
-- [poloniex(An API wrapper for Poloniex.com written in Python)](https://github.com/s4w3d0ff/python-poloniex)>=0.2.2
+- [poloniex(An API wrapper for Poloniex.com written in Python)](https://github.com/s4w3d0ff/python-poloniex)==0.2.2
 - An account of Poloniex.com
 - APIKey and Secret to access to Poloniex.com with API.
 - A gmail account.
