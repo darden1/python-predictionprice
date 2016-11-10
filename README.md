@@ -12,7 +12,7 @@
     - The features are represented with the sequencial past prices.
     - The training sample is a set of the features.
   - Implementation of the market trade with accessing to Poloniex.com in accordance with the predicted buying and selling signs.
-  - Function to inform the results of the prediction and buying and selling by e-mail.
+  - Function to inform the results of the prediction and trading by e-mail.
 
 ### Prerequired:
 - [poloniex(An API wrapper for Poloniex.com written in Python)](https://github.com/s4w3d0ff/python-poloniex)>=0.1.2
