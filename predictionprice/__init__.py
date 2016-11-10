@@ -378,7 +378,7 @@ class CustomPoloniex(poloniex.Poloniex):
         if len(np.where(balance.index==coin)[0])==0: return
         if float(btcValue)>float(balance.loc[coin]["btcValue"]):
             return self.marketSellAll(coin)
-        bids = pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin, depth=1000)).bids
+        bids = pd.DataFrame.from_dict(self.marketOrders(pair=self.basicCoin + "_" + coin, depth=1000)["bids"])
         sumBtcValue = 0.0
         sumAmount = 0.0
         for rate, amount in zip(np.array(bids.tolist())[:,0],np.array(bids.tolist())[:,1]):
@@ -394,7 +394,7 @@ class CustomPoloniex(poloniex.Poloniex):
         self.cancelOnOrder(coin)
         balance = self.myAvailableCompleteBalances()
         if len(np.where(balance.index==coin)[0])==0: return
-        bids = pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin, depth=1000)).bids
+        bids = pd.DataFrame.from_dict(self.marketOrders(pair=self.basicCoin + "_" + coin, depth=1000)["bids"])
         sumBtcValue = 0.0
         for rate, amount in zip(np.array(bids.tolist())[:,0],np.array(bids.tolist())[:,1]):
             sumBtcValue += float(rate)*float(amount)
@@ -409,7 +409,7 @@ class CustomPoloniex(poloniex.Poloniex):
         if len(np.where(balance.index==self.basicCoin)[0])==0: return
         if float(btcValue)>float(balance.loc[self.basicCoin]["btcValue"]):
             return self.marketBuyAll(coin)
-        asks = pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin, depth=1000)).asks
+        asks = pd.DataFrame.from_dict(self.marketOrders(pair=self.basicCoin + "_" + coin, depth=1000)["asks"])
         sumBtcValue = 0.0
         sumAmount = 0.0
         for rate, amount in zip(np.array(asks.tolist())[:,0],np.array(asks.tolist())[:,1]):
@@ -425,7 +425,7 @@ class CustomPoloniex(poloniex.Poloniex):
         self.cancelOnOrder(coin)
         balance = self.myAvailableCompleteBalances()
         if len(np.where(balance.index == self.basicCoin)[0]) == 0: return
-        asks = pd.DataFrame.from_dict(self.marketOrders(self.basicCoin + "_" + coin, depth=1000)).asks
+        asks = pd.DataFrame.from_dict(self.marketOrders(pair=self.basicCoin + "_" + coin, depth=1000)["asks"])
         sumBtcValue = 0.0
         sumAmount = 0.0
         for rate, amount in zip(np.array(asks.tolist())[:, 0], np.array(asks.tolist())[:, 1]):
