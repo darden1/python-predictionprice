@@ -24,11 +24,12 @@ from sklearn.preprocessing import StandardScaler
 import poloniex
 import logging
 
+
 class PredictionPrice(object):
     def __init__(self, currentPair="BTC_ETH", workingDirPath=".",
                  gmailAddress="", gmailAddressPassword="",
-                 waitGettingTodaysChart = True, waitGettingTodaysChartTime = 60,
-                 numFeature = 30, numTrainSample = 30, standarizationFeatureFlag = True, numStudyTrial = 50,
+                 waitGettingTodaysChart=True, waitGettingTodaysChartTime=60,
+                 numFeature=30, numTrainSample=30, standardizationFeatureFlag=True, numStudyTrial=50,
                  useBackTestOptResult=True, backTestInitialFund=1000, backTestSpread=0, backTestDays=60,
                  backTestOptNumFeatureMin=20, backTestOptNumFeatureMax=40, backTestOptNumTrainSampleMin=20, backTestOptNumTrainSampleMax=40):
 
@@ -44,7 +45,7 @@ class PredictionPrice(object):
             self.useBackTestOptResult = False
             self.numFeature = numFeature
             self.numTrainSample = numTrainSample
-        self.standarizationFeatureFlag = standarizationFeatureFlag
+        self.standardizationFeatureFlag = standardizationFeatureFlag
 
         self.numStudyTrial = numStudyTrial
         self.gmailAddress = gmailAddress
@@ -112,7 +113,7 @@ class PredictionPrice(object):
         """Transrate appreciation rate to -1 or 1 for preparing teacher data."""
         return np.where(np.array(y) >= 0.0, 1, -1)
 
-    def standarizationFeature(self, train_X, test_X):
+    def standardizationFeature(self, train_X, test_X):
         """Standarize feature data."""
         sc = StandardScaler()
         train_X_std = sc.fit_transform(train_X)
@@ -132,8 +133,8 @@ class PredictionPrice(object):
         """Return probability of price rise."""
         train_X, train_y = self.preparationTrainSample(sampleData, classData, trainStartIndex, numFeature, numTrainSample)
         X = np.array([sampleData[trainStartIndex:trainStartIndex + numFeature]])
-        if self.standarizationFeatureFlag:
-            train_X, X = self.standarizationFeature(train_X, X)
+        if self.standardizationFeatureFlag:
+            train_X, X = self.standardizationFeature(train_X, X)
         y = []
         for i in range(0, self.numStudyTrial):
             clf = tree.DecisionTreeClassifier()
@@ -335,11 +336,11 @@ class PredictionPrice(object):
         smtpobj.close()
 
 
-class CustumPoloniex(poloniex.Poloniex):
-    def __init__(self, APIKey = False, Secret = False,timeout = 10, coach = True, loglevel = logging.WARNING, basicCoin = "BTC",
-                 workingDirPath = ".", gmailAddress = "", gmailAddressPassword = "",
-                 coins = [], buySigns = [] ):
-        super(CustumPoloniex, self).__init__(APIKey, Secret, timeout, coach, loglevel)
+class CustomPoloniex(poloniex.Poloniex):
+    def __init__(self, APIKey=False, Secret=False,timeout=10, coach=True, loglevel=logging.WARNING, basicCoin="BTC",
+                 workingDirPath=".", gmailAddress="", gmailAddressPassword="",
+                 coins=[], buySigns=[] ):
+        super(CustomPoloniex, self).__init__(APIKey, Secret, timeout, coach, loglevel)
         self.basicCoin = basicCoin
         self.workingDirPath = workingDirPath
         self.gmailAddress = gmailAddress
@@ -349,7 +350,7 @@ class CustumPoloniex(poloniex.Poloniex):
 
     def myAvailableCompleteBalances(self):
         """Return AvailableCompleteBalances as pandas.DataFrame."""
-        balance = pd.DataFrame.from_dict(self.myCompleteBalances()).T
+        balance = pd.DataFrame.from_dict(self.myCompleteBalances(account="exchange")).T
         return balance.iloc[np.where(balance["btcValue"] != "0.00000000")]
 
     def myEstimatedValueOfHoldings(self):
@@ -494,7 +495,7 @@ class CustumPoloniex(poloniex.Poloniex):
         body += "Coins: " + str(self.coins) + "\n"
         body += "BuySigns: " + np.str(self.buySigns) + "\n"
         body += "\n"
-        body += "Your total fund:\n"
+        body += "Your total fund in exchange account:\n"
         body +=  str(myBTC) + " BTC\n"
         body +=  str(myUSD) + " USD\n"
         body += "\n"

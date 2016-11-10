@@ -19,11 +19,11 @@ else:
 
 
 def main():
-    myAPIKey="************************"
-    mySecret="************************************************"
+    myAPIKey = "************************"
+    mySecret = "************************************************"
     
     polo = Poloniex(APIKey=myAPIKey, Secret=mySecret, timeout=10, coach=True)
-    balanceAll = polo.myCompleteBalances()
+    balanceAll = polo.myCompleteBalances(account="exchange")
 
     myBTC = 0
     for i in range(len(balanceAll.items())):
@@ -38,7 +38,7 @@ def main():
     myUSD = lastValueUSDT_BTC * myBTC
     
     print("-"*35)
-    print("Your total fund:")
+    print("Your total fund in exchange account:")
     print(str(myBTC) + " BTC")
     print(str(myUSD) + " USD")
     print("\nBreakdown:")

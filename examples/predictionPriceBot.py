@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import os
 from apscheduler.schedulers.blocking import BlockingScheduler
-from predictionprice import CustumPoloniex
+from predictionprice import CustomPoloniex
 from predictionprice import PredictionPrice
 
 myGmailAddress = "********@gmail.com"
 myGmailAddressPassword = "************"
-myAPIKey="************************"
-mySecret="************************************************"
+myAPIKey = "************************"
+mySecret = "************************************************"
 
 coins = ["ETH", "XMR", "XRP", "FCT", "DASH"]
 backTestOptParams = [
@@ -44,7 +44,7 @@ def botRoutine():
             tomorrwPricePrediction.append(False)
 
     # --- Fit balance
-    polo = CustumPoloniex(APIKey=myAPIKey, Secret=mySecret, workingDirPath=workingDirPath,
+    polo = CustomPoloniex(APIKey=myAPIKey, Secret=mySecret, workingDirPath=workingDirPath,
                           gmailAddress=myGmailAddress, gmailAddressPassword=myGmailAddressPassword,
                           coins=coins, buySigns=tomorrwPricePrediction)
     polo.fitBalance()
