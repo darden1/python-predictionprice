@@ -88,8 +88,8 @@ class PredictionPrice(object):
 
     def getChartData(self):
         """Get chart data."""
-        polo = poloniex.Poloniex(timeout = 10, coach = True)
-        chartData = pd.DataFrame(polo.marketChart(self.currentPair, period=polo.DAY, start=time.time() - polo.DAY * 500,end=time.time()))
+        polo = poloniex.Poloniex(timeout = 10, coach = True, extend=True)
+        chartData = pd.DataFrame(polo.marketChart(self.currentPair, period=polo.DAY, start=time.time() - polo.DAY * 500,end=time.time())).astype(float)
         chartData.date = pd.DataFrame([datetime.datetime.fromtimestamp(chartData.date[i]).date() for i in range(len(chartData.date))])
         return self.reverseDataFrame(chartData)
 
@@ -270,41 +270,41 @@ class PredictionPrice(object):
         self.backTest(sampleData, classData, self.numFeature, self.numTrainSample, True)
         self.setTomorrowPriceProbability(sampleData, classData)
 
-    def getComment(self):
+    def getSummary(self):
         """Make summary sentence that include the result of the back test and the prediction of the price rise."""
-        commentStr=""
-        commentStr += "-----------------------------------------\n"
-        commentStr += "Chart data info.\n"
-        commentStr += "-----------------------------------------\n"
-        commentStr += "CurrentPair: " + self.currentPair + "\n"
-        commentStr += "Today: " + self.todayStr + "\n"
-        commentStr += "LatestDayInData: " + self.chartDataLatestDayStr + "\n"
-        commentStr += "LatestOpenPriceInData: " + str(self.chartData_.open[0]) + "\n"
-        commentStr += "PreviousDayInData: " + str(self.chartData_.date[1])[0:10] + "\n"
-        commentStr += "PreviousOpenPriceInData: " + str(self.chartData_.open[1]) + "\n"
-        commentStr += "-----------------------------------------\n"
-        commentStr += "Back test info.\n"
-        commentStr += "-----------------------------------------\n"
+        summaryStr=""
+        summaryStr += "-----------------------------------------\n"
+        summaryStr += "Chart data info.\n"
+        summaryStr += "-----------------------------------------\n"
+        summaryStr += "CurrentPair: " + self.currentPair + "\n"
+        summaryStr += "Today: " + self.todayStr + "\n"
+        summaryStr += "LatestDayInData: " + self.chartDataLatestDayStr + "\n"
+        summaryStr += "LatestOpenPriceInData: " + str(self.chartData_.open[0]) + "\n"
+        summaryStr += "PreviousDayInData: " + str(self.chartData_.date[1])[0:10] + "\n"
+        summaryStr += "PreviousOpenPriceInData: " + str(self.chartData_.open[1]) + "\n"
+        summaryStr += "-----------------------------------------\n"
+        summaryStr += "Back test info.\n"
+        summaryStr += "-----------------------------------------\n"
         if self.useBackTestOptResult:
-            commentStr += "ExecOptDay: " + str(self.backTestOptResult_["dateOpt"])[0:19] + "\n"
+            summaryStr += "ExecOptDay: " + str(self.backTestOptResult_["dateOpt"])[0:19] + "\n"
         else:
-            commentStr += "ExecOptDay: Nan\n"
-        commentStr += "NumFeature: " + str(self.numFeature) + "\n"
-        commentStr += "NumTrainSample: " + str(self.numTrainSample) + "\n"
-        commentStr += "AccuracyRateUp[%]: " + str(round(self.backTestResult_["AccuracyRateUp"].values[0]*100, 1)) + "\n"
-        commentStr += "AccuracyRateDown[%]: " + str(round(self.backTestResult_["AccuracyRateDown"].values[0]*100, 1)) + "\n"
-        commentStr += "InitialFund: " + str(self.backTestResult_["InitialFund"].values[0]) + "\n"
-        commentStr += "FinalFund: " + str(self.backTestResult_["FinalFund"].values[0]) + "\n"
-        commentStr += "IncreasedFundRatio[%]: " + str(round(self.backTestResult_["IncreasedFundRatio"].values[0]*100, 1)) + "\n"
-        commentStr += "InitialCurrentPrice: " + str(self.backTestResult_["InitialCurrentPrice"].values[0]) + "\n"
-        commentStr += "FinalCurrentPrice: " + str(self.backTestResult_["FinalCurrentPrice"].values[0]) + "\n"
-        commentStr += "IncreasedCurrentPriceRatio[%]: " + str(round(self.backTestResult_["IncreasedCurrentPriceRatio"].values[0]*100, 1)) + "\n"
-        commentStr += "-----------------------------------------\n"
-        commentStr += "Tomorrow " + self.currentPair + " price prediction\n"
-        commentStr += "-----------------------------------------\n"
-        commentStr += "TomorrowPriceRise?: " + str(self.tomorrowPriceFlag_) +"\n"
-        commentStr += "Probability[%]: " + str(round(self.tomorrowPriceProbability_*100,1)) +"\n"
-        return commentStr
+            summaryStr += "ExecOptDay: Nan\n"
+        summaryStr += "NumFeature: " + str(self.numFeature) + "\n"
+        summaryStr += "NumTrainSample: " + str(self.numTrainSample) + "\n"
+        summaryStr += "AccuracyRateUp[%]: " + str(round(self.backTestResult_["AccuracyRateUp"].values[0]*100, 1)) + "\n"
+        summaryStr += "AccuracyRateDown[%]: " + str(round(self.backTestResult_["AccuracyRateDown"].values[0]*100, 1)) + "\n"
+        summaryStr += "InitialFund: " + str(self.backTestResult_["InitialFund"].values[0]) + "\n"
+        summaryStr += "FinalFund: " + str(self.backTestResult_["FinalFund"].values[0]) + "\n"
+        summaryStr += "IncreasedFundRatio[%]: " + str(round(self.backTestResult_["IncreasedFundRatio"].values[0]*100, 1)) + "\n"
+        summaryStr += "InitialCurrentPrice: " + str(self.backTestResult_["InitialCurrentPrice"].values[0]) + "\n"
+        summaryStr += "FinalCurrentPrice: " + str(self.backTestResult_["FinalCurrentPrice"].values[0]) + "\n"
+        summaryStr += "IncreasedCurrentPriceRatio[%]: " + str(round(self.backTestResult_["IncreasedCurrentPriceRatio"].values[0]*100, 1)) + "\n"
+        summaryStr += "-----------------------------------------\n"
+        summaryStr += "Tomorrow " + self.currentPair + " price prediction\n"
+        summaryStr += "-----------------------------------------\n"
+        summaryStr += "TomorrowPriceRise?: " + str(self.tomorrowPriceFlag_) +"\n"
+        summaryStr += "Probability[%]: " + str(round(self.tomorrowPriceProbability_*100,1)) +"\n"
+        return summaryStr
 
     def sendMail(self, body):
         """Send a mail to inform the summary of the prediction."""
@@ -347,6 +347,7 @@ class CustomPoloniex(poloniex.Poloniex):
         self.gmailAddressPassword = gmailAddressPassword
         self.coins = coins
         self.buySigns = buySigns
+        self.todayStr = str(datetime.datetime.now(pytz.timezone("UTC")))[0:10]
 
     def myAvailableCompleteBalances(self):
         """Return AvailableCompleteBalances as pandas.DataFrame."""
@@ -484,23 +485,30 @@ class CustomPoloniex(poloniex.Poloniex):
         self.fitSell()
         self.fitBuy()
 
-    def sendMailBalance(self):
+    def getSummary(self):
+        myBTC, myUSD = self.myEstimatedValueOfHoldings()
+        balance = self.myAvailableCompleteBalances()
+        summaryStr = ""
+        summaryStr += "-----------------------------------------\n"
+        summaryStr += "Poloniex Balance.\n"
+        summaryStr += "-----------------------------------------\n"
+        summaryStr += "Today: " + self.todayStr + "\n"
+        summaryStr += "Coins: " + str(self.coins) + "\n"
+        summaryStr += "BuySigns: " + np.str(self.buySigns) + "\n"
+        summaryStr += "\n"
+        summaryStr += "Your total fund in exchange account:\n"
+        summaryStr += str(myBTC) + " BTC\n"
+        summaryStr += str(myUSD) + " USD\n"
+        summaryStr += "\n"
+        summaryStr += "Breakdown:\n"
+        summaryStr += str(balance)
+        return summaryStr
+
+    def sendMailBalance(self, body):
         """Send the balance by e-mail."""
-        if self.gmailAddress=="" or self.gmailAddressPassword=="":
+        if self.gmailAddress == "" or self.gmailAddressPassword == "":
             return "Set your gmail address and password."
         # ---Create message
-        myBTC,myUSD = self.myEstimatedValueOfHoldings()
-        balance = self.myAvailableCompleteBalances()
-        body = ""
-        body += "Coins: " + str(self.coins) + "\n"
-        body += "BuySigns: " + np.str(self.buySigns) + "\n"
-        body += "\n"
-        body += "Your total fund in exchange account:\n"
-        body +=  str(myBTC) + " BTC\n"
-        body +=  str(myUSD) + " USD\n"
-        body += "\n"
-        body += "Breakdown:\n"
-        body += str(balance)
         msg = email.MIMEMultipart.MIMEMultipart()
         msg["From"] = self.gmailAddress
         msg["To"] = self.gmailAddress

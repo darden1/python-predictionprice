@@ -36,7 +36,7 @@ def botRoutine():
                              backTestOptNumTrainSampleMax=backTestOptParams[coinIndex][3])
 
         pp.fit(pp.appreciationRate_, pp.quantizer(pp.appreciationRate_))
-        pp.sendMail(pp.getComment())
+        pp.sendMail(pp.getSummary())
         ppList.append(pp)
         if pp.backTestResult_["AccuracyRateUp"].values > 0.5:
             tomorrwPricePrediction.append(pp.tomorrowPriceFlag_)
@@ -48,13 +48,26 @@ def botRoutine():
                           gmailAddress=myGmailAddress, gmailAddressPassword=myGmailAddressPassword,
                           coins=coins, buySigns=tomorrwPricePrediction)
     polo.fitBalance()
-    polo.sendMailBalance()
+    polo.sendMailBalance(polo.getSummary())
     polo.savePoloniexBalanceToCsv()
+
+    # --- Write log
+    for coinIndex in range(len(coins)):
+        pp = ppList[coinIndex]
+        writeBotLog(pp.getSummary())
+    writeBotLog(polo.getSummary())
 
     # --- Back test optimization
     for coinIndex in range(len(coins)):
         pp = ppList[coinIndex]
         pp.backTestOptimization(pp.appreciationRate_, pp.quantizer(pp.appreciationRate_))
+
+
+def writeBotLog(logStr):
+    fileName = __file__.split(".py")[0] + ".log"
+    f = open(fileName, "a")
+    f.write(logStr)
+    f.close()
 
 
 if __name__ == "__main__":
