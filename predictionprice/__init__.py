@@ -31,8 +31,10 @@ class PredictionPrice(object):
                  waitGettingTodaysChart=True, waitGettingTodaysChartTime=60,
                  numFeature=30, numTrainSample=30, standardizationFeatureFlag=True, numStudyTrial=50,
                  useBackTestOptResult=True, backTestInitialFund=1000, backTestSpread=0, backTestDays=60,
-                 backTestOptNumFeatureMin=20, backTestOptNumFeatureMax=40, backTestOptNumTrainSampleMin=20, backTestOptNumTrainSampleMax=40):
+                 backTestOptNumFeatureMin=20, backTestOptNumFeatureMax=40, backTestOptNumTrainSampleMin=20, backTestOptNumTrainSampleMax=40,
+                 marginTrade=False):
 
+        self.marginTrade = marginTrade
         self.currentPair = currentPair
         self.workingDirPath = workingDirPath
         self.useBackTestOptResult=useBackTestOptResult
@@ -168,17 +170,21 @@ class PredictionPrice(object):
             if yPrediction == y:
                 if yPrediction == 1:
                     accuracyUp += 1
-                    fund.append(fund[pastDay - 1] * (
-                    1 + abs(self.appreciationRate_[trainStartIndex - 1]) - self.backTestSpread))
+                    fund.append(fund[pastDay - 1] * (1 + abs(self.appreciationRate_[trainStartIndex - 1]) - self.backTestSpread))
                 else:
                     accuracyDown += 1
-                    fund.append(fund[pastDay - 1])
+                    if self.marginTrade:
+                        fund.append(fund[pastDay - 1] * (1 + abs(self.appreciationRate_[trainStartIndex - 1]) - self.backTestSpread))
+                    else:
+                        fund.append(fund[pastDay - 1])
             else:
                 if yPrediction == 1:
-                    fund.append(fund[pastDay - 1] * (
-                    1 - abs(self.appreciationRate_[trainStartIndex - 1]) - self.backTestSpread))
+                    fund.append(fund[pastDay - 1] * (1 - abs(self.appreciationRate_[trainStartIndex - 1]) - self.backTestSpread))
                 else:
-                    fund.append(fund[pastDay - 1])
+                    if self.marginTrade:
+                        fund.append(fund[pastDay - 1] * (1 - abs(self.appreciationRate_[trainStartIndex - 1]) - self.backTestSpread))
+                    else:
+                        fund.append(fund[pastDay - 1])
 
         backTestAccuracyRateUp = float(accuracyUp) / sum(np.array(YPrediction)[np.where(np.array(YPrediction) == 1)])
         backTestAccuracyRateDown = -float(accuracyDown) / sum(np.array(YPrediction)[np.where(np.array(YPrediction) == -1)])
@@ -363,14 +369,20 @@ class CustomPoloniex(poloniex.Poloniex):
         return estimatedValueOfHoldingsAsBTC, estimatedValueOfHoldingsAsUSD
 
     def cancelOnOrder(self,coin):
-        """Cancel on Order"""
-        balance = self.myAvailableCompleteBalances()
-        if len(np.where(balance.index==coin)[0])==0: return
-
-        while balance.loc[coin]["onOrders"]!="0.00000000":
-            orderId = pd.DataFrame.from_dict(self.myOrders(self.basicCoin + "_" + coin))["orderNumber"].tolist()[0]
+        """Cancel on Exchange Order"""
+        onOrders = pd.DataFrame.from_dict(self.myOrders(pair=self.basicCoin + "_" + coin))
+        if len(onOrders) == 0: return
+        onExchangeOrders = onOrders.loc[np.where(onOrders["margin"]==0)]
+        if len(onExchangeOrders) == 0: return
+    
+        while len(onExchangeOrders) != 0:
+            orderId = onExchangeOrders["orderNumber"].tolist()[0]
             self.cancelOrder(orderId)
-            balance = self.myAvailableCompleteBalances()
+            onOrders = pd.DataFrame.from_dict(self.myOrders(pair=self.basicCoin + "_" + coin))
+            if len(onOrders) == 0: 
+                return
+            else:
+                onExchangeOrders = onOrders.loc[np.where(onOrders["margin"]==0)]
 
     def marketSell(self, coin, btcValue):
         """Sell coin with market price as estimated btcValue."""
