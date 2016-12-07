@@ -36,7 +36,7 @@ pip uninstall predictionprice
 - An example of auto trading bot has already prepared.
 - This bot execute followings one time a day.
   - Back test.
-  - Prediction of rise or fall of the virtual currency tomorrow price.
+  - Prediction the virtual currency tomorrow price will rise or fall.
   - Trading with market price in accordance with the prediction.
   - Optimization of the number of the features and training samples.(Optimized learning parameters are used for next day prediction)
   - Sending e-mail to inform the results of the execution.
