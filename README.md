@@ -1,4 +1,4 @@
-# **A module for a bot trading the virtual currency automatically**
+# **A module for a bot trading the virtual currency**
 ##### _Tested on Python 2.7.12_
 ##### Very thanks to [s4w3d0ff](https://github.com/s4w3d0ff) and [python-poloniex](https://github.com/s4w3d0ff/python-poloniex)
 
