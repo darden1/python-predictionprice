@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 from apscheduler.schedulers.blocking import BlockingScheduler
-from predictionprice import CustomPoloniex
+from predictionprice.derivedpoloniex.margintrade import MarginTradePoloniex
 from predictionprice import PredictionPrice
 
 myGmailAddress = "********@gmail.com"
@@ -20,11 +20,10 @@ backTestOptParams = [
 basicCoin = "BTC"
 workingDirPath = os.path.dirname(os.path.abspath(__file__))
 
-
 def botRoutine():
 
     ppList = []
-    tomorrwPricePrediction = []
+    tradeSigns = []
 
     # --- Prediction price and back test
     for coinIndex in range(len(coins)):
@@ -33,23 +32,34 @@ def botRoutine():
                              backTestOptNumFeatureMin=backTestOptParams[coinIndex][0],
                              backTestOptNumFeatureMax=backTestOptParams[coinIndex][1],
                              backTestOptNumTrainSampleMin=backTestOptParams[coinIndex][2],
-                             backTestOptNumTrainSampleMax=backTestOptParams[coinIndex][3])
+                             backTestOptNumTrainSampleMax=backTestOptParams[coinIndex][3], marginTrade=True)
+
 
         pp.fit(pp.appreciationRate_, pp.quantizer(pp.appreciationRate_))
         pp.sendMail(pp.getSummary())
         ppList.append(pp)
-        if pp.backTestResult_["AccuracyRateUp"].values > 0.5:
-            tomorrwPricePrediction.append(pp.tomorrowPriceFlag_)
+        if pp.tomorrowPriceFlag_:  # Buy sign
+            if pp.backTestResult_["AccuracyRateUp"].values > 0.5:
+                tradeSigns.append("long")
+            else:
+                tradeSigns.append("hold")
         else:
-            tomorrwPricePrediction.append(False)
+            if pp.backTestResult_["AccuracyRateDown"].values > 0.5:
+                tradeSigns.append("short")
+            else:
+                tradeSigns.append("hold")
 
     # --- Fit balance
-    polo = CustomPoloniex(APIKey=myAPIKey, Secret=mySecret, workingDirPath=workingDirPath,
-                          gmailAddress=myGmailAddress, gmailAddressPassword=myGmailAddressPassword,
-                          coins=coins, buySigns=tomorrwPricePrediction)
-    polo.fitBalance()
-    polo.sendMailBalance(polo.getSummary())
-    polo.savePoloniexBalanceToCsv()
+    try:
+        polo = MarginTradePoloniex(Key=myAPIKey, Secret=mySecret, workingDirPath=workingDirPath,
+                              gmailAddress=myGmailAddress, gmailAddressPassword=myGmailAddressPassword,
+                              coins=coins, tradeSigns=tradeSigns)
+        polo.savePoloniexMarginAccountBalanceToCsv()
+        polo.fitBalance()
+        polo.sendMailBalance(polo.getSummary())
+        polo.savePoloniexMarginAccountBalanceToCsv()
+    except:
+        pass
 
     # --- Write log
     for coinIndex in range(len(coins)):
@@ -62,13 +72,11 @@ def botRoutine():
         pp = ppList[coinIndex]
         pp.backTestOptimization(pp.appreciationRate_, pp.quantizer(pp.appreciationRate_))
 
-
 def writeBotLog(logStr):
     fileName = __file__.split(".py")[0] + ".log"
     f = open(fileName, "a")
     f.write(logStr)
     f.close()
-
 
 if __name__ == "__main__":
     sc = BlockingScheduler(timezone="UTC")

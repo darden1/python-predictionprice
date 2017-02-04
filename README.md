@@ -16,6 +16,7 @@
 
 ### Prerequired:
 - [poloniex(An API wrapper for Poloniex.com written in Python)](https://github.com/s4w3d0ff/python-poloniex)==0.2.2
+  - poloniex-0.2.2 will be installed automatically when you install predictionprice module.
 - An account of Poloniex.com
 - APIKey and Secret to access to Poloniex.com with API.
 - A gmail account.
@@ -33,19 +34,25 @@ pip uninstall predictionprice
 ```
 
 ### Usage:
-- An example of auto trading bot has already prepared.
-- This bot execute followings one time a day.
+- Examples of auto trading bot have already prepared.
+- The bot executes followings one time a day.
   - Back test.
   - Prediction the virtual currency tomorrow price will rise or fall.
   - Trading with market price in accordance with the prediction.
   - Optimization of the number of the features and training samples.(Optimized learning parameters are used for next day prediction)
   - Sending e-mail to inform the results of the execution.
-- Open examples/predictionPriceBot.py and set your gmail address, password, poloniex.com APIKey and Secret.
+- Bots are in examples folder.
+  - examples/exchangetrade/exchangetradebot.py is for exchange trade.
+  - examples/margintrade/margintradebot.py is for margin trade.
+    - Remark to transfer fund to margin account when you use margintradebot.py.
+- Open exchangetradebot.py or margintradebot.py and set your gmail address, password, poloniex.com APIKey and Secret.
 - Run this script with nohup as following.
 ```
-nohup python predictionPriceBot.py > out.log 2> err.log &
+nohup python exchangetradebot.py > out.log 2> err.log &
+or
+nohup python margintradebot.py > out.log 2> err.log &
 ```
-- You can check the process ID as following when you want to kill this process.
+- You can check the process ID as following when you want to kill the process.
 ```
 ps auxw | grep python
 ```

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
  
 setup(
         name             = "predictionprice",
-        version          = "1.1.1",
+        version          = "2.0.0",
         description      = "Prediction price for Python 2.7.x",
         license          = "MIT",
         author           = "darden1",
