@@ -27,12 +27,15 @@ class MarginTradePoloniex(poloniex.Poloniex):
 
 
     def floatToEighthDigit(self, numFloat):
+        """Change float number to string of eighth digit number."""
         return "{0:.9f}".format(float(numFloat)).split(".")[0] + "." + "{0:.9f}".format(float(numFloat)).split(".")[1][0:8]
 
     def returnSummary(self):
+        """Return margin account balance summary as pandas data frame."""
         return pd.DataFrame.from_dict({"summary": self.returnMarginAccountSummary()})
 
     def returnTradableBalance(self):
+        """Return tradable balance."""
         summary = self.returnSummary()
         return self.floatToEighthDigit(np.float(summary.loc["netValue"]) * self.leverage - np.float(summary.loc["totalBorrowedValue"]))
 
@@ -62,6 +65,7 @@ class MarginTradePoloniex(poloniex.Poloniex):
                 onMarginOrders = onOrders.loc[np.where(onOrders["margin"] == 1)]
 
     def returnRateAndAmount(self, orderStr, coin, btcValue):
+        """Return BTC rate and coin amount to trade some coin."""
         order = pd.Series(pd.DataFrame.from_dict(
             self.marketOrders(pair=self.basicCoin + "_" + coin, depth=1000)[orderStr]).values.tolist())
         sumBtcValue = 0.0
@@ -112,10 +116,12 @@ class MarginTradePoloniex(poloniex.Poloniex):
         return ret
 
     def distributedBtcValue(self):
+        """Return BTC value that is whole you can trade divide tby the number of coin you want to trade."""
         summary = self.returnSummary()
         return self.floatToEighthDigit(float(summary.loc["netValue"]) * self.leverage / len(self.coins))
 
     def fitBalance(self):
+        """Re-take your positions based on the trading sign."""
         position = self.getOpeningMarginPosition()
         for coinIndex in range(len(self.coins)):
             if type(position)!=pd.core.frame.DataFrame: # Hold nothing today?
@@ -141,6 +147,7 @@ class MarginTradePoloniex(poloniex.Poloniex):
                             self.marketMarginSell(self.coins[coinIndex], self.distributedBtcValue())
 
     def closeAllOpeningMarginPosition(self):
+        """Close all your positions."""
         position = self.getOpeningMarginPosition()
         if type(position) == pd.core.frame.DataFrame:
             for coinIndex in range(len(position.index)):
@@ -155,6 +162,7 @@ class MarginTradePoloniex(poloniex.Poloniex):
         return estimatedValueOfHoldingsAsBTC, estimatedValueOfHoldingsAsUSD
 
     def getSummary(self):
+        """Get your balance and return it as string."""
         myBTC, myUSD = self.returnEstimatedValueOfHoldings()
         summary = self.returnSummary()
         positions = self.getOpeningMarginPosition()
@@ -225,4 +233,3 @@ class MarginTradePoloniex(poloniex.Poloniex):
             writer.writerow(["Date", "BTC", "USD"])  # Write header
         writer.writerow([date, str(myBTC), str(myUSD)])
         f.close()
-        
