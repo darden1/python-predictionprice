@@ -22,8 +22,8 @@
 
 ### Install:
 ```
-git clone https://github.com/darden1/python-predictionprice.git
-cd python-predictionprice
+git clone -b 1.x https://github.com/darden1/python-predictionprice.git python-predictionprice-1.x
+cd python-predictionprice-1.x
 python setup.py install
 ```
 
