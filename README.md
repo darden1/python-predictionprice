@@ -47,9 +47,12 @@ pip uninstall predictionprice
     - Remark to transfer fund to margin account when you use margintradebot.py.
 - Open exchangetradebot.py or margintradebot.py and set your gmail address, password, poloniex.com APIKey and Secret.
 - Run this script with nohup as following.
+  - Exchange trade:
 ```
 nohup python exchangetradebot.py > out.log 2> err.log &
-or
+```
+  - Margin trade:
+```
 nohup python margintradebot.py > out.log 2> err.log &
 ```
 - You can check the process ID as following when you want to kill the process.
