@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 from apscheduler.schedulers.blocking import BlockingScheduler
-from predictionprice.derivedpoloniex.margintrade import MarginTradePoloniex
+from predictionprice.derivedpoloniex import MarginTradePoloniex
 from predictionprice import PredictionPrice
 
 myGmailAddress = "********@gmail.com"
